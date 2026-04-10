@@ -113,6 +113,18 @@ body {
     padding: 8px;
 }
 
+.btn-icon {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--color-text-main);
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Tarjetas */
 .card {
     background: var(--color-bg-card);
@@ -194,6 +206,55 @@ body {
     border-radius: 20px;
     font-size: 14px;
     font-weight: 500;
+}
+
+/* Nav Desktop / Mobile */
+.nav-desktop {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.nav-desktop ul {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+.nav-desktop a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: inline-flex;
+    }
+    .nav-desktop {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-bg-card);
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--color-border);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        z-index: 20;
+    }
+    .nav-desktop.nav-active {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .nav-desktop ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .header-actions {
+        margin-left: auto;
+    }
 }
 
 #app-main {

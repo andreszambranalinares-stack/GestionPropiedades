@@ -83,12 +83,6 @@ const Store = {
         ACTIVE_USER: 'gestion_alquileres_active_user'
     },
 
-    // Usuarios permitidos del sistema
-    USERS: [
-        { id: "andres", nombre: "Andrés Zambrana Linares" },
-        { id: "manuel", nombre: "Manuel Pedro Zambrana Bernabé" }
-    ],
-
     // Estado principal
     data: {
         edificios: [],
@@ -117,21 +111,34 @@ const Store = {
             let changed = false;
             if(!this.data.gestores || this.data.gestores.length === 0) {
                 this.data.gestores = [
-                    { id: 'andres', nombre: 'Andrés Zambrana Linares', email: 'andres@ejemplo.com', telefono: '', rol: 'admin' },
-                    { id: 'manuel', nombre: 'Manuel Pedro Zambrana Bernabé', email: 'manuel@ejemplo.com', telefono: '', rol: 'admin' }
+                    { id: 'admin-init', nombre: 'Administrador Inicial', email: 'admin@local.test', telefono: '', rol: 'admin', pin: '0000' }
                 ];
                 changed = true;
+            } else {
+                // Ensure all users have a pin
+                this.data.gestores.forEach(g => {
+                    if (!g.pin) {
+                        g.pin = '0000';
+                        changed = true;
+                    }
+                });
             }
             if(!this.data.historico) {
                 this.data.historico = [];
                 changed = true;
             }
-            // Comprobar que todos los edificios tengan su array de gastos
+            // Comprobar que todos los edificios tengan su array de gastos y tipo de apartamento
             this.data.edificios.forEach(b => {
                 if(!b.gastos) {
                     b.gastos = [];
                     changed = true;
                 }
+                b.apartamentos.forEach(a => {
+                    if (!a.tipo) {
+                        a.tipo = 'Apartamento';
+                        changed = true;
+                    }
+                });
             });
             
             if(changed) this.save();
@@ -161,8 +168,8 @@ const Store = {
     },
 
     getActiveUser() {
-        if (!this.activeUserId) return null;
-        return this.USERS.find(u => u.id === this.activeUserId);
+        if (!this.activeUserId || !this.data.gestores) return null;
+        return this.data.gestores.find(u => u.id === this.activeUserId);
     },
 
     logout() {
@@ -185,18 +192,24 @@ const Store = {
     },
 
     /**
-     * Actualiza los datos del inquilino en un apartamento específico
+     * Actualiza los datos de la unidad y del inquilino
      */
-    updateTenant(buildingId, aptId, tenantData) {
+    updateTenant(buildingId, aptId, tipoUnidad, tenantData) {
         const building = this.getBuildingById(buildingId);
         if(!building) return;
         const apt = building.apartamentos.find(a => a.id === aptId);
         if(!apt) return;
         
-        apt.inquilino = {
-            ...apt.inquilino,
-            ...tenantData
-        };
+        if (tipoUnidad) {
+            apt.tipo = tipoUnidad;
+        }
+
+        if (tenantData) {
+            apt.inquilino = {
+                ...apt.inquilino,
+                ...tenantData
+            };
+        }
         this.save();
     },
 
@@ -289,6 +302,7 @@ const Store = {
             building.apartamentos.push({
                 id: `${bId}-${i.toString().padStart(2,'0')}`,
                 numero: i.toString().padStart(2,'0'),
+                tipo: 'Apartamento',
                 inquilino: null,
                 pagos: []
             });
@@ -357,7 +371,7 @@ const Store = {
     /**
      * Añadir o actualizar gestor
      */
-    addManager(nombre, email, telefono, rol, id = null) {
+    addManager(nombre, email, telefono, rol, pin, id = null) {
         if (!this.data.gestores) this.data.gestores = [];
         
         if (id) {
@@ -367,6 +381,7 @@ const Store = {
                 manager.email = email;
                 manager.telefono = telefono;
                 manager.rol = rol;
+                if (pin) manager.pin = pin;
             }
         } else {
             this.data.gestores.push({
@@ -374,7 +389,8 @@ const Store = {
                 nombre,
                 email,
                 telefono,
-                rol
+                rol,
+                pin: pin || '0000'
             });
         }
         this.save();
@@ -407,50 +423,52 @@ const Store = {
     },
 
     /**
-     * Datos por defecto - Edificio Corredera
+     * Datos por defecto - Totalmente vacío
      */
     seedInitialData() {
-        const apartamentos = [];
+        this.data.edificios = [];
+        this.data.historico = [];
         
-        // Crear 12 apartamentos
-        for (let i = 1; i <= 12; i++) {
-            const numero = i.toString().padStart(2, '0');
-            // Las 2 últimas están vacías, las otras 10 ocupadas pero sin datos
-            const isOcupado = i <= 10;
-            
-            apartamentos.push({
-                id: `corredera-001-${numero}`,
-                numero: numero,
-                inquilino: isOcupado ? {
-                    nombre: "",
-                    telefono: "",
-                    email: "",
-                    alquiler: null,
-                    fechaInicio: ""
-                } : null,
-                pagos: []
-            });
-        }
-
-        const corredera = {
-            id: "corredera-001",
-            nombre: "Edificio Corredera",
-            direccion: "Calle Corredera, s/n",
-            localidad: "Jerez de la Frontera",
-            etiquetas: ['Jerez Centro', 'Centro Histórico'],
-            apartamentos: apartamentos
-        };
-
-        this.data.edificios.push(corredera);
-        
-        // Seed gestores iniciales si no hay
+        // Seed gestor inicial administrador (sin él no hay forma de entrar)
         if (!this.data.gestores || this.data.gestores.length === 0) {
             this.data.gestores = [
-                { id: 'andres', nombre: 'Andrés Zambrana Linares', email: 'andres@ejemplo.com', telefono: '', rol: 'admin' },
-                { id: 'manuel', nombre: 'Manuel Pedro Zambrana Bernabé', email: 'manuel@ejemplo.com', telefono: '', rol: 'admin' }
+                { id: 'admin-init', nombre: 'Administrador Inicial', email: 'admin@local.test', telefono: '', rol: 'admin', pin: '0000' }
             ];
         }
 
         this.save();
+    },
+
+    exportDataString() {
+        return JSON.stringify(this.data);
+    },
+
+    importDataString(jsonStr) {
+        try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed && typeof parsed === 'object') {
+                this.data = {
+                    edificios: parsed.edificios || [],
+                    facturas: parsed.facturas || [],
+                    gestores: parsed.gestores || [
+                        { id: 'admin-init', nombre: 'Administrador Inicial', email: 'admin@local.test', telefono: '', rol: 'admin', pin: '0000' }
+                    ],
+                    historico: parsed.historico || []
+                };
+                
+                // Asegurar tipos en las unidades si no existían
+                this.data.edificios.forEach(b => {
+                    b.apartamentos.forEach(a => {
+                        if (!a.tipo) a.tipo = 'Apartamento';
+                    });
+                });
+
+                this.save();
+                return true;
+            }
+        } catch (e) {
+            console.error("Error importando JSON", e);
+        }
+        return false;
     }
 };

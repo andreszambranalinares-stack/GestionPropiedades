@@ -35,6 +35,7 @@ const UI = {
         btnVacateTenant: document.getElementById('btn-vacate-tenant'),
         
         // Inputs form
+        tenantUnitType: document.getElementById('tenant-unit-type'),
         tenantName: document.getElementById('tenant-name'),
         tenantPhone: document.getElementById('tenant-phone'),
         tenantEmail: document.getElementById('tenant-email'),
@@ -93,8 +94,12 @@ const UI = {
         managerEmail: document.getElementById('manager-email'),
         managerPhone: document.getElementById('manager-phone'),
         managerRole: document.getElementById('manager-role'),
+        managerPin: document.getElementById('manager-pin'),
         managerEditId: document.getElementById('manager-edit-id'),
         modalManagerTitle: document.getElementById('modal-manager-title'),
+        
+        btnMobileMenu: document.getElementById('btn-mobile-menu'),
+        appNav: document.getElementById('app-nav'),
 
         // Tags
         tagsInput: document.getElementById('tagsInput'),
@@ -170,6 +175,16 @@ const UI = {
         this.elements.btnLogout.addEventListener('click', () => {
             App.logout();
         });
+        
+        this.elements.btnMobileMenu.addEventListener('click', () => {
+            this.elements.appNav.classList.toggle('nav-active');
+        });
+        // Esconder el menú móvil si se hace clic en un nav link
+        this.elements.appNav.querySelectorAll('a').forEach(aEl => {
+            aEl.addEventListener('click', () => {
+                this.elements.appNav.classList.remove('nav-active');
+            });
+        });
 
         // Eventos Dashboard
         this.elements.btnBackDashboard.addEventListener('click', () => {
@@ -186,6 +201,7 @@ const UI = {
             // El submit en dialog cierra automáticamente y podemos delegar la lógica a App
             const bId = this.elements.modalBuildingId.value;
             const aId = this.elements.modalAptId.value;
+            const tipoUnidad = this.elements.tenantUnitType.value;
             const data = {
                 nombre: this.elements.tenantName.value,
                 telefono: this.elements.tenantPhone.value,
@@ -193,7 +209,7 @@ const UI = {
                 fechaEntrada: this.elements.tenantEntry.value,
                 alquiler: parseFloat(this.elements.tenantRent.value) || 0
             };
-            App.saveTenant(bId, aId, data);
+            App.saveTenant(bId, aId, tipoUnidad, data);
         });
 
         // Evento de Subida de Archivo
@@ -311,7 +327,8 @@ const UI = {
             const email = this.elements.managerEmail.value;
             const telefono = this.elements.managerPhone.value;
             const rol = this.elements.managerRole.value;
-            App.saveManager(id, nombre, email, telefono, rol);
+            const pin = this.elements.managerPin.value;
+            App.saveManager(id, nombre, email, telefono, rol, pin);
             this.elements.modalManager.close();
         });
 
@@ -409,6 +426,33 @@ const UI = {
         this.renderizarTags();
     },
 
+    exportBackup() {
+        const dataStr = Store.exportDataString();
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup_alquileres_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+            if (Store.importDataString(content)) {
+                alert("Datos importados con éxito. La aplicación se recargará.");
+                location.reload();
+            } else {
+                alert("El archivo JSON no es válido o está corrupto.");
+            }
+        };
+        reader.readAsText(file);
+    },
+
     /**
      * Renderización y control de Vistas
      */
@@ -461,9 +505,12 @@ const UI = {
 
     updateHeaderActiveUser(user) {
         if(user) {
-            // Mostrar nombre corto: ej. "Andrés Z." o la primera palabra
             const shortName = user.nombre.split(' ')[0];
-            this.elements.activeUserBadge.textContent = shortName;
+            let rolText = '';
+            if (user.rol === 'admin') rolText = 'Admin';
+            if (user.rol === 'gestor') rolText = 'Gestor';
+            if (user.rol === 'visualizador') rolText = 'Solo Vista';
+            this.elements.activeUserBadge.textContent = `${shortName} · ${rolText}`;
         }
     },
 
@@ -474,6 +521,19 @@ const UI = {
         this.showAppLayout();
         this.showView('dashboard');
         this.elements.headerTitle.textContent = "Mis Edificios";
+
+        const currentUser = Store.getActiveUser();
+        if (currentUser && currentUser.rol === 'visualizador') {
+            document.getElementById('btn-new-building').style.display = 'none';
+        } else {
+            document.getElementById('btn-new-building').style.display = 'inline-flex';
+        }
+        
+        if (currentUser && currentUser.rol !== 'admin') {
+            document.getElementById('btn-manage-managers').style.display = 'none';
+        } else {
+            document.getElementById('btn-manage-managers').style.display = 'inline-flex';
+        }
         
         // Rellenar select de filtro
         const filterVal = this.elements.filterTagSelect.value;
@@ -495,7 +555,7 @@ const UI = {
         this.elements.buildingsList.innerHTML = '';
 
         if (displayedBuildings.length === 0) {
-            this.elements.buildingsList.innerHTML = '<p class="text-muted">No se encontraron edificios.</p>';
+            this.elements.buildingsList.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--color-text-muted); background: white; border-radius: 8px; border: 1px dashed var(--color-border);"><h3 style="margin-bottom: 15px; color: var(--color-secondary);">¡Bienvenido a tu panel vacío!</h3><p>Aún no has registrado ningún edificio o unidad de alquiler.</p></div>';
             return;
         }
 
@@ -553,9 +613,26 @@ const UI = {
         const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         const mesLiteral = mesesNombres[fechaActual.getMonth()];
 
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') {
+            document.getElementById('btn-edit-building').style.display = 'none';
+            document.querySelector('#view-building-details .btn[style*="background:#ef4444"]').style.display = 'none'; // btn gasto
+        } else {
+            document.getElementById('btn-edit-building').style.display = 'inline-flex';
+            document.querySelector('#view-building-details .btn[style*="background:#ef4444"]').style.display = 'inline-flex';
+        }
+
         building.apartamentos.forEach(apt => {
             const isOcupado = apt.inquilino !== null;
             const isPagado = isOcupado && apt.pagos.some(p => p.mes === mesActualFormat && p.pagado);
+
+            // Icono Tipo de Unidad
+            let unitIcon = '🏢'; // defecto apartamento
+            if (apt.tipo === 'Garaje') unitIcon = '🚗';
+            else if (apt.tipo === 'Trastero') unitIcon = '📦';
+            else if (apt.tipo === 'Local Comercial') unitIcon = '🏪';
+            else if (apt.tipo === 'Oficina') unitIcon = '💼';
+            else if (apt.tipo === 'Otro') unitIcon = '🔑';
 
             const card = document.createElement('div');
             card.className = 'card apt-card';
@@ -584,7 +661,7 @@ const UI = {
             }
 
             let actionsHtml = `<div class="apt-actions" style="flex-wrap: wrap;">`;
-            if (isOcupado) {
+            if (isOcupado && user.rol !== 'visualizador') {
                 const alquilerNumber = parseFloat(apt.inquilino.alquiler) || 0;
                 if (!isPagado) {
                     if (alquilerNumber > 0) {
@@ -596,13 +673,17 @@ const UI = {
                     actionsHtml += `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:14px; background:var(--color-success); border-color:var(--color-success); min-width:80px; cursor: pointer;" onclick="App.unmarkPaid('${building.id}', '${apt.id}', '${mesActualFormat}')" title="Clic para deshacer">Pagado ↩</button>`;
                 }
                 actionsHtml += `<button class="btn btn-outline" style="flex:1; padding:8px; font-size:14px; min-width:80px;" onclick="App.generateInvoiceOpts('${building.id}', '${apt.id}')">Factura</button>`;
+            } else if (isOcupado && user.rol === 'visualizador') {
+                actionsHtml += `<button class="btn btn-outline" style="flex:1; padding:8px; font-size:14px; min-width:80px;" onclick="App.generateInvoiceOpts('${building.id}', '${apt.id}')">Factura</button>`;
             }
-            actionsHtml += `<button class="btn btn-outline" style="flex:1; padding:8px; font-size:14px; min-width:80px;" onclick="App.openTenantModal('${building.id}', '${apt.id}')">${isOcupado ? 'Editar' : 'Ocupar'}</button>`;
+            if (user.rol !== 'visualizador') {
+                actionsHtml += `<button class="btn btn-outline" style="flex:1; padding:8px; font-size:14px; min-width:80px;" onclick="App.openTenantModal('${building.id}', '${apt.id}')">${isOcupado ? 'Editar' : 'Ocupar'}</button>`;
+            }
             actionsHtml += `</div>`;
 
             card.innerHTML = `
                 <div class="apt-header">
-                    <div class="apt-num">Apt. ${apt.numero}</div>
+                    <div class="apt-num" title="${apt.tipo || 'Apartamento'}">${unitIcon} ${apt.numero}</div>
                     ${statusHtml}
                 </div>
                 ${detailsHtml}
@@ -618,6 +699,7 @@ const UI = {
         
         // Reset form
         this.elements.formTenant.reset();
+        this.elements.tenantUnitType.value = apt.tipo || 'Apartamento';
         
         if (apt.inquilino) {
             this.elements.tenantName.value = apt.inquilino.nombre || '';
@@ -875,6 +957,13 @@ const UI = {
     renderManagers(managers) {
         this.showAppLayout();
         this.showView('managers');
+        
+        const currentUser = Store.getActiveUser();
+        if (currentUser && currentUser.rol !== 'admin') {
+            this.elements.btnNewManager.style.display = 'none';
+        } else {
+            this.elements.btnNewManager.style.display = 'inline-flex';
+        }
 
         this.elements.managersList.innerHTML = '';
         managers.forEach(gestor => {
@@ -898,7 +987,7 @@ const UI = {
                     <span class="tag" style="background: ${rolBg}">${rolBadge}</span>
                 </div>
                 ${gestor.telefono ? `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;">${gestor.telefono}</div>` : ''}
-                <div class="manager-actions">
+                <div class="manager-actions" style="display: ${currentUser && currentUser.rol !== 'admin' ? 'none' : 'flex'}">
                     <button class="btn btn-outline btn-small" onclick="App.openEditManager('${gestor.id}')">Editar</button>
                     <button class="btn btn-secondary btn-small" style="background:var(--color-danger)" onclick="App.removeManager('${gestor.id}')">Eliminar</button>
                 </div>

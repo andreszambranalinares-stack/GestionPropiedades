@@ -32,14 +32,21 @@
         <!-- Cabecera Común (se muestra tras login) -->
         <header id="app-header" class="hidden">
             <div class="header-content">
-                <nav style="display:flex; align-items:center; gap:20px;">
+                <div style="display:flex; align-items:center;">
+                    <button id="btn-mobile-menu" class="btn btn-icon mobile-only">☰</button>
                     <h2 id="header-title" style="margin:0;">Panel Principal</h2>
-                    <ul style="display:flex; gap:15px; list-style:none; margin:0; padding:0; font-size:14px; font-weight:500;">
-                        <li><a href="#" onclick="App.loadDashboard(Store.getActiveUser())" style="color:var(--color-primary); text-decoration:none;">Mis Edificios</a></li>
-                        <li><a href="#" onclick="App.loadHistoryView()" style="color:var(--color-primary); text-decoration:none;">Ex-Inquilinos</a></li>
-                        <li><a href="#" onclick="App.loadStatsView()" style="color:var(--color-primary); text-decoration:none;">Estadísticas Anuales</a></li>
-                        <li><a href="#" onclick="App.loadTaxView()" style="color:var(--color-primary); text-decoration:none;">Hacienda</a></li>
+                </div>
+                <nav id="app-nav" class="nav-desktop">
+                    <ul style="display:flex; list-style:none; margin:0; padding:0; font-size:14px; font-weight:500;">
+                        <li><a href="#" onclick="App.loadDashboard(Store.getActiveUser())">Mis Edificios</a></li>
+                        <li><a href="#" onclick="App.loadHistoryView()">Ex-Inquilinos</a></li>
+                        <li><a href="#" onclick="App.loadStatsView()">Estadísticas Anuales</a></li>
+                        <li><a href="#" onclick="App.loadTaxView()">Hacienda</a></li>
+                        <!-- Backup System -->
+                        <li><a href="#" onclick="UI.exportBackup()">📥 Exportar JSON</a></li>
+                        <li><a href="#" onclick="document.getElementById('import-json').click()">📤 Importar JSON</a></li>
                     </ul>
+                    <input type="file" id="import-json" accept=".json" style="display:none" onchange="UI.importBackup(event)">
                 </nav>
                 <div class="header-actions">
                     <span id="active-user-badge" class="user-badge"></span>
@@ -328,7 +335,18 @@
             <input type="hidden" id="modal-building-id">
             
             <div class="form-group">
-                <label>Nombre completo</label>
+                <label>Tipo de Unidad</label>
+                <select id="tenant-unit-type" class="form-control">
+                    <option value="Apartamento">Apartamento / Piso</option>
+                    <option value="Garaje">Garaje</option>
+                    <option value="Trastero">Trastero</option>
+                    <option value="Local Comercial">Local Comercial</option>
+                    <option value="Oficina">Oficina</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nombre del Inquilino</label>
                 <input type="text" id="tenant-name" class="form-control" placeholder="Ej. Juan Pérez">
             </div>
             <div class="form-group">
@@ -460,9 +478,13 @@
                 <select id="manager-role" class="form-control" required>
                     <option value="">Selecciona un rol</option>
                     <option value="admin">Administrador (acceso total)</option>
-                    <option value="gestor">Gestor (ver y editar)</option>
+                    <option value="gestor">Gestor (ver y editar unidades)</option>
                     <option value="visualizador">Visualizador (solo ver)</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label>PIN de Acceso (4 dígitos)</label>
+                <input type="password" id="manager-pin" class="form-control" placeholder="Ej. 1234" maxlength="4" pattern="[0-9]{4}" title="Debe contener exactamente 4 números" required>
             </div>
             
             <div class="modal-actions">

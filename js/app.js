@@ -26,9 +26,19 @@ const App = {
     },
 
     login(userId) {
-        Store.setActiveUser(userId);
-        const user = Store.getActiveUser();
-        this.loadDashboard(user);
+        const managers = Store.getManagers();
+        const userToLogin = managers.find(m => m.id === userId);
+        if(!userToLogin) return;
+
+        const pin = prompt(`Introduce PIN para ${userToLogin.nombre}`);
+        if (pin === null) return; // Cancelled
+        
+        if (pin === userToLogin.pin) {
+            Store.setActiveUser(userId);
+            this.loadDashboard(userToLogin);
+        } else {
+            alert("PIN incorrecto. Acceso denegado.");
+        }
     },
 
     logout() {
@@ -61,22 +71,39 @@ const App = {
         }
     },
 
-    saveTenant(buildingId, aptId, data) {
-        Store.updateTenant(buildingId, aptId, data);
+    saveTenant(buildingId, aptId, tipoUnidad, data) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') {
+            alert("Acción no permitida. Tu rol es de solo lectura.");
+            return;
+        }
+        Store.updateTenant(buildingId, aptId, tipoUnidad, data);
         this.openBuilding(buildingId); // Refresh view
     },
 
     vacateTenant(buildingId, aptId) {
-        Store.vacateTenant(buildingId, aptId);
-        this.openBuilding(buildingId); // Refresh view
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') {
+            alert("Acción no permitida. Tu rol es de solo lectura.");
+            return;
+        }
+        if(confirm("¿Seguro que deseas marcar este apartamento como desocupado? Se archivarán los datos del inquilino en Historial.")) {
+            Store.vacateTenant(buildingId, aptId);
+            this.openBuilding(buildingId); // Refresh view
+            this.loadHistoryView(); // Redirect a historico según spec de UI
+        }
     },
 
     markPaid(buildingId, aptId, mes) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
         Store.markPaid(buildingId, aptId, mes);
         this.openBuilding(buildingId); // Refresh view
     },
 
     unmarkPaid(buildingId, aptId, mes) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
         if(confirm("¿Estás seguro de que quieres anular el pago registrado para este mes?")) {
             Store.unmarkPaid(buildingId, aptId, mes);
             this.openBuilding(buildingId); // Refresh view
@@ -162,12 +189,16 @@ const App = {
     },
 
     saveBuilding(id, nombre, direccion, localidad, numApt, etiquetas) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') {
+            alert("Permiso denegado.");
+            return;
+        }
         if(id) {
             Store.updateBuilding(id, nombre, direccion, localidad, etiquetas);
         } else {
             Store.addBuilding(nombre, direccion, localidad, numApt, etiquetas);
         }
-        const user = Store.getActiveUser();
         this.loadDashboard(user);
     },
 
@@ -176,8 +207,13 @@ const App = {
         UI.renderManagers(managers);
     },
 
-    saveManager(id, nombre, email, telefono, rol) {
-        Store.addManager(nombre, email, telefono, rol, id);
+    saveManager(id, nombre, email, telefono, rol, pin) {
+        const user = Store.getActiveUser();
+        if (user && user.rol !== 'admin') {
+            alert("Solo un Administrador puede crear o modificar gestores.");
+            return;
+        }
+        Store.addManager(nombre, email, telefono, rol, pin, id);
         this.loadManagersView();
     },
 
@@ -196,7 +232,12 @@ const App = {
     },
 
     removeManager(id) {
-        if(confirm('¿Estás seguro de que quieres eliminar este gestor?')) {
+        const user = Store.getActiveUser();
+        if (user && user.rol !== 'admin') {
+            alert("Solo un Administrador puede eliminar gestores.");
+            return;
+        }
+        if(confirm('¿Estás seguro de que quieres eliminar este gestor permanentemente?')) {
             Store.removeManager(id);
             this.loadManagersView();
         }
@@ -205,18 +246,24 @@ const App = {
     // --- FUNCIONES V6 (Gastos, Stats, Historico, IDB) --- //
     
     saveGasto(bId, date, desc, type, amount) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
         Store.addGasto(bId, date, desc, type, amount);
         this.openBuilding(bId); // refresh
     },
 
     deleteGasto(bId, gastoId) {
-        if(confirm("¿Borrar este gasto?")) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
+        if(confirm("¿Estás seguro de que quieres borrar este gasto? Esta acción no se puede deshacer.")) {
             Store.deleteGasto(bId, gastoId);
             this.generateBuildingReport(bId); // refresh report live
         }
     },
 
     async uploadDocument(bId, aId, file) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
         const tenantAptLabel = `${bId}___${aId}`;
         await IDBManager.saveFile(tenantAptLabel, file);
     },
@@ -228,7 +275,9 @@ const App = {
     },
 
     async deleteDocument(docId, tenantAptLabel) {
-        if(confirm("¿Eliminar este documento permanentemente?")) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
+        if(confirm("¿Eliminar este documento permanentemente? Esta acción no se puede deshacer.")) {
             await IDBManager.deleteFile(docId);
             const [bId, aId] = tenantAptLabel.split('___');
             this.loadDocumentsList(bId, aId);
@@ -250,7 +299,9 @@ const App = {
     },
 
     deleteHistorico(id) {
-        if(confirm("¿Eliminar permanentemente este registro del historial?")) {
+        const user = Store.getActiveUser();
+        if (user && user.rol === 'visualizador') return;
+        if(confirm("¿Estás seguro de que quieres eliminar permanentemente este registro del historial? Se perderán estos datos para siempre.")) {
             Store.deleteHistorico(id);
             this.loadHistoryView();
         }
