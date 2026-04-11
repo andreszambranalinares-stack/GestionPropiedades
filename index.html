@@ -20,7 +20,7 @@
                 <div class="brand">
                     <div class="logo">Z</div>
                     <h1>Gestión de Alquileres</h1>
-                    <p>Selecciona tu perfil para continuar</p>
+                    <p>¿Quién eres?</p>
                 </div>
                 <div class="user-buttons">
                     <button class="btn btn-large btn-primary" data-user="andres">Andrés Zambrana Linares</button>
@@ -38,7 +38,7 @@
                 </div>
                 <nav id="app-nav" class="nav-desktop">
                     <ul style="display:flex; list-style:none; margin:0; padding:0; font-size:14px; font-weight:500;">
-                        <li><a href="#" onclick="App.loadDashboard(Store.getActiveUser())">Mis Edificios</a></li>
+                        <li><a href="#" onclick="App.loadDashboard(Store.getActiveUser())">Mis Inmuebles</a></li>
                         <li><a href="#" onclick="App.loadHistoryView()">Ex-Inquilinos</a></li>
                         <li><a href="#" onclick="App.loadStatsView()">Estadísticas Anuales</a></li>
                         <li><a href="#" onclick="App.loadTaxView()">Hacienda</a></li>
@@ -60,9 +60,9 @@
             <!-- Vista: Panel de Edificios -->
             <section id="view-dashboard" class="view">
                 <div class="view-header" style="flex-direction: column; align-items: flex-start; gap: var(--spacing-sm);">
-                    <h3>Mis Edificios</h3>
+                    <h3>Mis Inmuebles</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%; align-items: center;">
-                        <button id="btn-new-building" class="btn btn-outline">+ Nuevo Edificio</button>
+                        <button id="btn-new-building" class="btn btn-outline">+ Nuevo Inmueble</button>
                         <button id="btn-manage-managers" class="btn" style="background: #9b59b6; color: white;">👥 Gestionar Gestores</button>
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
                             <label style="font-size: 13px; color: var(--color-text-muted);">Filtrar:</label>
@@ -76,25 +76,20 @@
                     <!-- Los edificios se renderizarán aquí -->
                 </div>
                 
-                <div class="summary-cards">
-                    <!-- Tarjetas de resumen -->
-                    <div class="card summary-card">
-                        <h4>Cobros Pendientes</h4>
-                        <div id="summary-pending" class="metric text-danger">0</div>
-                    </div>
-                </div>
+
             </section>
 
             <!-- Vista: Detalles de Edificio (Apartamentos) -->
             <section id="view-building-details" class="view">
+                <div id="buildingPendingBadge"></div>
                 <div class="view-header">
                     <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-                        <button id="btn-back-dashboard" class="btn btn-icon" style="padding-left:0;">← Volver</button>
-                        <h3 id="current-building-name">Edificio</h3>
+                        <button id="btn-back-dashboard" class="btn btn-icon" style="padding-left:0;">← Atrás</button>
+                        <h3 id="current-building-name">Inmueble</h3>
                     </div>
                     <div style="display: flex; gap: var(--spacing-sm); align-items: center; flex-wrap: wrap;">
-                        <button id="btn-edit-building" class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">Editar Edificio</button>
-                        <button onclick="UI.openExpenseModal(document.getElementById('modal-building-id').value)" class="btn" style="background:#ef4444; color:white; padding: 6px 12px; font-size: 13px;">+ Gasto</button>
+                        <button id="btn-edit-building" class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">Editar Inmueble</button>
+                        <button id="btn-add-expense" onclick="UI.openExpenseModal(document.getElementById('modal-building-id').value)" class="btn" style="background:#ef4444; color:white; padding: 6px 12px; font-size: 13px;">+ Gasto</button>
                         <button id="btn-generate-report" class="btn btn-primary" style="padding: 6px 12px; font-size: 13px;">Reporte del Mes</button>
                     </div>
                 </div>
@@ -106,7 +101,7 @@
             <!-- Vista: Factura -->
             <section id="view-invoice" class="view">
                 <div class="view-header no-print">
-                    <button id="btn-back-from-invoice" class="btn btn-icon">← Volver</button>
+                    <button id="btn-back-from-invoice" class="btn btn-icon">← Atrás</button>
                     <button id="btn-print-invoice" class="btn btn-primary" style="margin-bottom:0">Imprimir / PDF</button>
                 </div>
                 
@@ -172,7 +167,7 @@
             <!-- VISTA DE REPORTE MENSUAL -->
             <section id="view-report" class="view">
                 <div class="view-header no-print">
-                    <button id="btn-back-from-report" class="btn btn-icon">← Volver</button>
+                    <button id="btn-back-from-report" class="btn btn-icon">← Atrás</button>
                     <button id="btn-print-report" class="btn btn-primary" style="margin-bottom:0">Imprimir Reporte</button>
                 </div>
                 
@@ -183,7 +178,7 @@
                             <p style="color:var(--color-text-muted)">Estado de Cuentas</p>
                         </div>
                         <div class="invoice-meta">
-                            <p><strong>Edificio:</strong> <span id="rep-building-name"></span></p>
+                            <p><strong>Inmueble:</strong> <span id="rep-building-name"></span></p>
                             <p><strong>Mes Analizado:</strong> <span id="rep-month-year"></span></p>
                             <p><strong>Generado el:</strong> <span id="rep-date-generated"></span></p>
                         </div>
@@ -242,7 +237,7 @@
             <section id="view-managers" class="view">
                 <div class="view-header">
                     <div style="display: flex; flex-direction: column; gap: var(--spacing-xs);">
-                        <button id="btn-back-from-managers" class="btn btn-icon" style="align-self: flex-start; padding-left: 0;">← Volver</button>
+                        <button id="btn-back-from-managers" class="btn btn-icon" style="align-self: flex-start; padding-left: 0;">← Atrás</button>
                         <h3>Gestionar Gestores</h3>
                         <p style="font-size: 13px; color: var(--color-text-muted);">
                             Aquí puedes ver todos los gestores que pueden acceder a esta aplicación
@@ -347,15 +342,15 @@
             </div>
             <div class="form-group">
                 <label>Nombre del Inquilino</label>
-                <input type="text" id="tenant-name" class="form-control" placeholder="Ej. Juan Pérez">
+                <input type="text" id="tenant-name" class="form-control" placeholder="Ej. Juan Pérez" inputmode="text" autocomplete="name">
             </div>
             <div class="form-group">
                 <label>Teléfono</label>
-                <input type="tel" id="tenant-phone" class="form-control" placeholder="600123456">
+                <input type="tel" id="tenant-phone" class="form-control" placeholder="600123456" inputmode="tel" autocomplete="tel">
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="tenant-email" class="form-control" placeholder="correo@ejemplo.com">
+                <input type="email" id="tenant-email" class="form-control" placeholder="correo@ejemplo.com" inputmode="email" autocomplete="email">
             </div>
             <div class="form-group">
                 <label>Fecha de Entrada</label>
@@ -363,7 +358,7 @@
             </div>
             <div class="form-group">
                 <label>Alquiler Mensual (€)</label>
-                <input type="number" id="tenant-rent" class="form-control" min="0" step="1">
+                <input type="number" id="tenant-rent" class="form-control" min="0" step="1" inputmode="decimal" autocomplete="off">
             </div>
 
             <!-- Archivos Adjuntos IndexedDB -->
@@ -422,12 +417,21 @@
 
     <dialog id="modal-building" class="modal">
         <form id="form-building" method="dialog">
-            <h3 id="modal-building-title" style="margin-bottom: var(--spacing-md)">Nuevo Edificio</h3>
+            <h3 id="modal-building-title" style="margin-bottom: var(--spacing-md)">Nuevo Inmueble</h3>
             <input type="hidden" id="bld-edit-id">
 
             <div class="form-group">
+                <label>Tipo de Inmueble (*)</label>
+                <select id="bld-type" class="form-control" required>
+                    <option value="edificio">Edificio / Bloque de Pisos</option>
+                    <option value="garaje">Garaje Comunitario</option>
+                    <option value="piso">Piso / Chalet Independiente</option>
+                    <option value="local">Local Comercial</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Nombre (*)</label>
-                <input type="text" id="bld-name" class="form-control" placeholder="Ej. Edificio A" required>
+                <input type="text" id="bld-name" class="form-control" placeholder="Ej. Edificio A / Piso Centro" required>
             </div>
             <div class="form-group">
                 <label>Dirección</label>
@@ -438,14 +442,14 @@
                 <input type="text" id="bld-city" class="form-control" placeholder="Jerez de la Frontera">
             </div>
             <div class="form-group">
-                <label>Etiquetas (presiona Enter)</label>
+                <label>Etiquetas 📝</label>
                 <div class="tags-input" id="tagsInput">
                     <input type="text" id="tagInput" placeholder="ej: Jerez centro, Zona A...">
                 </div>
-                <small style="color: var(--color-text-muted);">Presiona Enter para agregar</small>
+                <small style="color: var(--color-text-muted);">Escribe + Enter para agregar</small>
             </div>
-            <div class="form-group">
-                <label>Nº de Apartamentos (*)</label>
+            <div class="form-group" id="bld-apts-group">
+                <label id="bld-apts-label">Nº de Apartamentos (*)</label>
                 <input type="number" id="bld-apts" class="form-control" min="1" step="1" required>
             </div>
             
@@ -463,15 +467,15 @@
 
             <div class="form-group">
                 <label>Nombre Completo</label>
-                <input type="text" id="manager-name" class="form-control" required>
+                <input type="text" id="manager-name" class="form-control" inputmode="text" autocomplete="name" required>
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="manager-email" class="form-control" required>
+                <input type="email" id="manager-email" class="form-control" inputmode="email" autocomplete="email" required>
             </div>
             <div class="form-group">
-                <label>Teléfono (opcional)</label>
-                <input type="tel" id="manager-phone" class="form-control" placeholder="666 123 456">
+                <label>Teléfono <small style="color: #7f8c8d;">(opcional)</small></label>
+                <input type="tel" id="manager-phone" class="form-control" placeholder="666 123 456" inputmode="tel" autocomplete="tel">
             </div>
             <div class="form-group">
                 <label>Rol</label>
@@ -502,7 +506,7 @@
             <input type="hidden" id="inv-opt-a-id">
             
             <div class="form-group">
-                <label>Periodo de Facturación</label>
+                <label>Mes</label>
                 <select id="inv-period-type" class="form-control" required>
                     <option value="month">Mes Completo (30 días)</option>
                     <option value="custom">Periodo Personalizado (Por días)</option>
@@ -544,7 +548,7 @@
             </div>
 
             <div class="form-group">
-                <label>¿Quién genera esta factura?</label>
+                <label>¿Por quién?</label>
                 <select id="inv-issuer-select" class="form-control" required></select>
             </div>
             <div class="modal-actions">

@@ -584,3 +584,244 @@ select.form-control {
         max-width: 100%;
     }
 }
+
+/* ========================================
+   OPTIMIZACIÓN MÓVIL v3
+   Responsive design completo para <768px y <480px
+   ======================================== */
+
+@media (max-width: 768px) {
+    /* ------- GENERAL ------- */
+    /* Aumentar font base para legibilidad */
+    body {
+        font-size: 16px;  /* De 14px a 16px */
+    }
+
+    /* Reducir padding lateral para aprovechar espacio */
+    .container {
+        padding: 8px;  /* De 10px a 8px */
+    }
+
+    /* ------- BOTONES ------- */
+    /* Los botones DEBEN ser ≥44px para tocar fácilmente */
+    .btn {
+        padding: 14px 16px;      /* Aumentar de 12px 20px */
+        min-height: 44px;        /* Altura mínima táctil */
+        min-width: 44px;         /* Ancho mínimo táctil */
+        font-size: 15px;         /* Aumentar de 14px */
+        margin: 8px 5px 8px 0;   /* Espacio entre botones */
+    }
+
+    /* Botones pequeños (secundarios) */
+    .btn-small {
+        padding: 10px 14px;
+        font-size: 14px;
+        min-height: 40px;
+    }
+
+    /* ------- MODALS (Ventanas emergentes) ------- */
+    /* Las ventanas se ven mejor con estos ajustes en móvil */
+    .modal-content {
+        width: 95%;              /* De 90% a 95% (máximo ancho) */
+        border-radius: 16px;     /* Más redondeado */
+        padding: 20px;           /* Espacio interno */
+        max-height: 85vh;        /* Máximo 85% de altura de pantalla */
+    }
+
+    /* Botón para cerrar modal (X) debe ser fácil de tocar */
+    .close-modal {
+        font-size: 32px;         /* De 28px a 32px (más grande) */
+        padding: 10px;           /* Área táctil alrededor de la X */
+        cursor: pointer;
+    }
+
+    /* ------- FORMULARIOS ------- */
+    /* Los campos deben ser cómodos de escribir */
+    .form-group {
+        margin-bottom: 18px;     /* De 15px a 18px (más espacio) */
+    }
+
+    .form-group label {
+        font-size: 15px;         /* De 14px a 15px */
+        margin-bottom: 8px;      /* Espacio entre label e input */
+    }
+
+    /* LO MÁS IMPORTANTE: inputs DEBEN ser 16px para evitar zoom en iOS */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 12px;           /* De 10px a 12px */
+        font-size: 16px;         /* CRÍTICO: 16px para no hacer zoom */
+        min-height: 44px;        /* Altura mínima para tocar */
+    }
+
+    /* ------- TARJETAS ------- */
+    /* Las tarjetas se apilan mejor en móvil */
+    .card {
+        flex-direction: column;   /* Texto debajo, no al lado */
+        gap: 10px;
+    }
+
+    .card-actions {
+        flex-direction: column;   /* Botones apilados verticalmente */
+        width: 100%;
+    }
+
+    .card-actions .btn {
+        width: 100%;             /* Botones ocupan ancho completo */
+        text-align: center;
+    }
+
+    /* ------- GRID DE APARTAMENTOS ------- */
+    /* Los apartamentos se distribuyen mejor */
+    .apartamento-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;               /* De 15px a 10px */
+        margin-bottom: 15px;
+    }
+
+    /* ------- ESTADÍSTICAS ------- */
+    /* Los números importantes se ven mejor en 2 columnas */
+    .stats {
+        grid-template-columns: repeat(2, 1fr);  /* 2 columnas en móvil */
+        gap: 10px;
+    }
+
+    .stat-box {
+        padding: 15px;           /* De 20px a 15px */
+    }
+
+    .stat-number {
+        font-size: 28px;         /* De 32px a 28px */
+    }
+
+    .stat-label {
+        font-size: 11px;         /* De 12px a 11px */
+    }
+
+    /* ------- SECCIONES ------- */
+    /* Las secciones respiran mejor en móvil */
+    .section {
+        padding: 16px;           /* De 20px a 16px */
+        margin-bottom: 15px;     /* De 20px a 15px */
+    }
+
+    .section h2 {
+        font-size: 18px;         /* De 20px a 18px */
+        margin-bottom: 12px;     /* De 15px a 12px */
+    }
+}
+
+/* ========================================
+   EXTRA PEQUEÑO: <480px (iPhone pequeño)
+   Cambios más agresivos para pantallas muy pequeñas
+   ======================================== */
+
+@media (max-width: 480px) {
+    /* Padding aún menor */
+    .container {
+        padding: 6px;
+    }
+
+    /* Secciones más compactas */
+    .section {
+        padding: 12px;
+    }
+
+    /* Stats en 1 columna (no caben 2) */
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    /* Botones un poco más pequeños pero aún clickeables */
+    .btn {
+        padding: 12px 14px;
+    }
+}
+
+/* ========================================
+   BADGE PENDIENTES (v6.1)
+   El badge rojo que muestra "⚠️ 2 pendientes"
+   ======================================== */
+
+.building-pending-badge {
+    /* Estilo de la caja roja */
+    display: inline-block;
+    background: #e74c3c;         /* Rojo llamativo */
+    color: white;                /* Texto blanco */
+    padding: 10px 14px;          /* Espacio interno */
+    border-radius: 6px;          /* Esquinas redondeadas */
+    font-size: 14px;             /* Tamaño del texto */
+    font-weight: 600;            /* Texto en bold */
+    margin-bottom: 15px;         /* Espacio abajo del badge */
+}
+
+/* Badge en móvil */
+@media (max-width: 768px) {
+    .building-pending-badge {
+        padding: 8px 12px;       /* Más pequeño en móvil */
+        font-size: 13px;
+    }
+}
+
+/* Badge en móvil pequeño */
+@media (max-width: 480px) {
+    .building-pending-badge {
+        padding: 6px 10px;       /* Aún más pequeño */
+        font-size: 12px;
+    }
+}
+
+/* FIN DE CSS v3 + v6.1 */
+
+/* ========== UX MÓVIL RECOMENDACIONES ========== */
+html {
+    scroll-behavior: smooth;
+}
+
+*:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Tablas responsive en móvil */
+@media (max-width: 768px) {
+    .invoice-table thead {
+        display: none;
+    }
+    .invoice-table, .invoice-table tbody, .invoice-table tr, .invoice-table td {
+        display: block;
+        width: 100%;
+    }
+    .invoice-table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 5px;
+        background: white;
+    }
+    .invoice-table td {
+        text-align: right;
+        padding-left: 45%;
+        position: relative;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        min-height: 40px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    .invoice-table td:last-child {
+        border-bottom: 0;
+    }
+    .invoice-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 40%;
+        text-align: left;
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--color-text-muted);
+    }
+}

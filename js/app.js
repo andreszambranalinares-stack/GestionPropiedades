@@ -99,6 +99,10 @@ const App = {
         if (user && user.rol === 'visualizador') return;
         Store.markPaid(buildingId, aptId, mes);
         this.openBuilding(buildingId); // Refresh view
+        
+        // Después de guardar el pago
+        edificioActual = Store.getBuildingById(buildingId);
+        actualizarBadgePendientes(); // Llamar función para actualizar badge
     },
 
     unmarkPaid(buildingId, aptId, mes) {
@@ -107,6 +111,9 @@ const App = {
         if(confirm("¿Estás seguro de que quieres anular el pago registrado para este mes?")) {
             Store.unmarkPaid(buildingId, aptId, mes);
             this.openBuilding(buildingId); // Refresh view
+
+            edificioActual = Store.getBuildingById(buildingId);
+            actualizarBadgePendientes();
         }
     },
 
@@ -188,7 +195,7 @@ const App = {
         UI.renderBuildingReport(building, totalCollected, reportItems, totalExpenses, monthLabel, gastosDelMes);
     },
 
-    saveBuilding(id, nombre, direccion, localidad, numApt, etiquetas) {
+    saveBuilding(id, nombre, direccion, localidad, numApt, etiquetas, tipoInmueble) {
         const user = Store.getActiveUser();
         if (user && user.rol === 'visualizador') {
             alert("Permiso denegado.");
@@ -197,7 +204,7 @@ const App = {
         if(id) {
             Store.updateBuilding(id, nombre, direccion, localidad, etiquetas);
         } else {
-            Store.addBuilding(nombre, direccion, localidad, numApt, etiquetas);
+            Store.addBuilding(nombre, direccion, localidad, numApt, etiquetas, tipoInmueble);
         }
         this.loadDashboard(user);
     },
@@ -391,3 +398,38 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
+
+// Variable global para compatibilidad con el modo estricto del prompt
+let edificioActual;
+
+function calcularPendientesEdificio(edificio) {
+    if (!edificio) return 0;
+    const mesActual = new Date().toISOString().slice(0, 7);
+    
+    return edificio.apartamentos.filter(apt => {
+        if (!apt.inquilino) return false;
+        const pago = apt.pagos && apt.pagos.find(p => p.mes === mesActual);
+        return !pago || !pago.pagado;
+    }).length;
+}
+
+// Función auxiliar
+function actualizarBadgePendientes() {
+    if (typeof calcularPendientesEdificio === 'function' && 
+        typeof edificioActual !== 'undefined' && edificioActual) {
+        const pendientes = calcularPendientesEdificio(edificioActual);
+        const badgeDiv = document.getElementById('buildingPendingBadge');
+        if (badgeDiv) {
+            if (pendientes > 0) {
+                const plural = pendientes > 1 ? 's' : '';
+                badgeDiv.innerHTML = `
+                    <div class="building-pending-badge">
+                        ⚠️ ${pendientes} apartamento${plural} pendiente${plural}
+                    </div>
+                `;
+            } else {
+                badgeDiv.innerHTML = '';
+            }
+        }
+    }
+}

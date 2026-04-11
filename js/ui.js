@@ -159,6 +159,15 @@ const UI = {
 
     init() {
         this.bindEvents();
+        
+        // Prevenir zoom en inputs móvil
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.tagName === 'INPUT' || 
+                event.target.tagName === 'SELECT' || 
+                event.target.tagName === 'TEXTAREA') {
+                event.target.style.fontSize = '16px';
+            }
+        }, false);
     },
 
     bindEvents() {
@@ -198,7 +207,8 @@ const UI = {
         });
 
         this.elements.formTenant.addEventListener('submit', (e) => {
-            // El submit en dialog cierra automáticamente y podemos delegar la lógica a App
+            e.preventDefault();
+            this.elements.modalTenant.close();
             const bId = this.elements.modalBuildingId.value;
             const aId = this.elements.modalAptId.value;
             const tipoUnidad = this.elements.tenantUnitType.value;
@@ -266,10 +276,14 @@ const UI = {
         });
 
         this.elements.btnNewBuilding.addEventListener('click', () => {
-             this.elements.modalBuildingTitle.textContent = "Nuevo Edificio";
+             this.elements.modalBuildingTitle.textContent = "Nuevo Inmueble";
              this.elements.bldEditId.value = '';
              this.elements.bldApts.disabled = false;
+             document.getElementById('bld-type').disabled = false;
              this.elements.formBuilding.reset();
+             document.getElementById('bld-apts-group').style.display = 'block';
+             document.getElementById('bld-apts-label').textContent = 'Nº de Apartamentos (*)';
+             document.getElementById('bld-type').value = 'edificio';
              this.tagsActuales = [];
              this.renderizarTags();
              this.elements.modalBuilding.showModal();
@@ -277,13 +291,27 @@ const UI = {
         this.elements.btnEditBuilding.addEventListener('click', () => {
              const building = Store.getBuildingById(this.elements.modalBuildingId.value);
              if(building) {
-                 this.elements.modalBuildingTitle.textContent = "Editar Edificio";
+                 this.elements.modalBuildingTitle.textContent = "Editar Inmueble";
                  this.elements.bldEditId.value = building.id;
                  this.elements.bldName.value = building.nombre;
                  this.elements.bldAddress.value = building.direccion;
                  this.elements.bldCity.value = building.localidad;
                  this.elements.bldApts.value = building.apartamentos.length;
                  this.elements.bldApts.disabled = true; // No permitir cambiar nº apts
+                 document.getElementById('bld-type').value = building.tipoInmueble || 'edificio';
+                 document.getElementById('bld-type').disabled = true; // No permitir cambiar el tipo
+                 
+                 // trigger change logic for layout without re-enabling
+                 if (building.tipoInmueble === 'local' || building.tipoInmueble === 'piso') {
+                     document.getElementById('bld-apts-group').style.display = 'none';
+                 } else if (building.tipoInmueble === 'garaje') {
+                     document.getElementById('bld-apts-group').style.display = 'block';
+                     document.getElementById('bld-apts-label').textContent = 'Nº de Plazas (*)';
+                 } else {
+                     document.getElementById('bld-apts-group').style.display = 'block';
+                     document.getElementById('bld-apts-label').textContent = 'Nº de Apartamentos (*)';
+                 }
+
                  this.tagsActuales = building.etiquetas ? building.etiquetas.slice() : [];
                  this.renderizarTags();
                  this.elements.modalBuilding.showModal();
@@ -293,12 +321,34 @@ const UI = {
             this.elements.modalBuilding.close();
         });
         this.elements.formBuilding.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.elements.modalBuilding.close();
             const id = this.elements.bldEditId.value;
             const nombre = this.elements.bldName.value;
             const direccion = this.elements.bldAddress.value;
             const localidad = this.elements.bldCity.value;
-            const numApt = parseInt(this.elements.bldApts.value);
-            App.saveBuilding(id, nombre, direccion, localidad, numApt, this.tagsActuales.slice());
+            const numApt = parseInt(this.elements.bldApts.value) || 1;
+            const tipoInmueble = document.getElementById('bld-type').value;
+            App.saveBuilding(id, nombre, direccion, localidad, numApt, this.tagsActuales.slice(), tipoInmueble);
+        });
+
+        document.getElementById('bld-type').addEventListener('change', (e) => {
+            const val = e.target.value;
+            const group = document.getElementById('bld-apts-group');
+            const label = document.getElementById('bld-apts-label');
+            const input = document.getElementById('bld-apts');
+            if (val === 'edificio') {
+                group.style.display = 'block';
+                label.textContent = 'Nº de Apartamentos (*)';
+                input.min = "1"; input.value = "1";
+            } else if (val === 'garaje') {
+                group.style.display = 'block';
+                label.textContent = 'Nº de Plazas (*)';
+                input.min = "1"; input.value = "1";
+            } else {
+                group.style.display = 'none';
+                input.value = "1";
+            }
         });
 
         // Tags Evento
@@ -322,6 +372,7 @@ const UI = {
             this.elements.modalManager.close();
         });
         this.elements.formManager.addEventListener('submit', (e) => {
+            e.preventDefault();
             const id = this.elements.managerEditId.value;
             const nombre = this.elements.managerName.value;
             const email = this.elements.managerEmail.value;
@@ -345,6 +396,7 @@ const UI = {
             this.elements.modalInvoiceOpts.close();
         });
         this.elements.formInvoiceOpts.addEventListener('submit', (e) => {
+            e.preventDefault();
             const bId = this.elements.invOptBId.value;
             const aId = this.elements.invOptAId.value;
             const issuerName = this.elements.invIssuerSelect.value;
@@ -372,6 +424,7 @@ const UI = {
 
         // Evento Gastos
         this.elements.formExpense.addEventListener('submit', (e) => {
+            e.preventDefault();
             const bId = this.elements.expenseBId.value;
             const desc = this.elements.expenseDesc.value;
             const type = this.elements.expenseType.value;
@@ -520,7 +573,7 @@ const UI = {
     renderDashboard(buildings, allTags = []) {
         this.showAppLayout();
         this.showView('dashboard');
-        this.elements.headerTitle.textContent = "Mis Edificios";
+        this.elements.headerTitle.textContent = "Mis Inmuebles";
 
         const currentUser = Store.getActiveUser();
         if (currentUser && currentUser.rol === 'visualizador') {
@@ -583,9 +636,9 @@ const UI = {
                     </div>
                 </div>
                 <div style="background: var(--color-bg); padding: 8px 12px; border-radius: var(--border-radius); font-size: 14px; margin-bottom: var(--spacing-md);">
-                    <strong>${ocupados}</strong> de ${numApartamentos} aptos. ocupados
+                    <strong>${ocupados}</strong> de ${numApartamentos} unidades ocupadas
                 </div>
-                <button class="btn btn-primary" style="width: 100%" onclick="App.openBuilding('${building.id}')">Ver Apartamentos</button>
+                <button class="btn btn-primary" style="width: 100%" onclick="App.openBuilding('${building.id}')">Ver Unidades</button>
             `;
             
             this.elements.buildingsList.appendChild(card);
@@ -602,9 +655,30 @@ const UI = {
         // Almacenar id del edificio actual en el hidden input del tenant modal global por si acaso, o local.
         this.elements.modalBuildingId.value = building.id;
         
-        this.elements.headerTitle.textContent = "Detalles Edificio";
+        this.elements.headerTitle.textContent = "Detalles Inmueble";
         this.elements.currentBuildingName.textContent = building.nombre;
         this.elements.apartmentsList.innerHTML = '';
+
+        const badgeDiv = document.getElementById('buildingPendingBadge');
+        if (badgeDiv) {
+            const mesActual = new Date().toISOString().slice(0, 7);
+            const pendientes = building.apartamentos.filter(apt => {
+                if (!apt.inquilino) return false;
+                const pago = (apt.pagos || []).find(p => p.mes === mesActual);
+                return !pago || !pago.pagado;
+            }).length;
+
+            if (pendientes > 0) {
+                const plural = pendientes > 1 ? 's' : '';
+                badgeDiv.innerHTML = `
+                    <div class="building-pending-badge">
+                        ⚠️ ${pendientes} apartamento${plural} pendiente${plural}
+                    </div>
+                `;
+            } else {
+                badgeDiv.innerHTML = '';
+            }
+        }
 
         // Fechas para cobros
         const fechaActual = new Date();
@@ -616,10 +690,10 @@ const UI = {
         const user = Store.getActiveUser();
         if (user && user.rol === 'visualizador') {
             document.getElementById('btn-edit-building').style.display = 'none';
-            document.querySelector('#view-building-details .btn[style*="background:#ef4444"]').style.display = 'none'; // btn gasto
+            document.getElementById('btn-add-expense').style.display = 'none'; // btn gasto
         } else {
             document.getElementById('btn-edit-building').style.display = 'inline-flex';
-            document.querySelector('#view-building-details .btn[style*="background:#ef4444"]').style.display = 'inline-flex';
+            document.getElementById('btn-add-expense').style.display = 'inline-flex';
         }
 
         building.apartamentos.forEach(apt => {
@@ -657,7 +731,7 @@ const UI = {
                     </div>
                 `;
             } else {
-                detailsHtml = `<p class="text-muted" style="font-size:14px; margin: 8px 0;">Apartamento disponible</p>`;
+                detailsHtml = `<p class="text-muted" style="font-size:14px; margin: 8px 0;">Unidad disponible</p>`;
             }
 
             let actionsHtml = `<div class="apt-actions" style="flex-wrap: wrap;">`;
@@ -820,10 +894,10 @@ const UI = {
             if (item.status === 'pending') statusText = '<span style="color:#dc2626; font-weight:600">❌ Pendiente</span>';
             
             tr.innerHTML = `
-                <td><strong>${item.numApt}</strong></td>
-                <td>${item.inquilino}</td>
-                <td>${statusText}</td>
-                <td class="amount">€${item.alquiler.toFixed(2)}</td>
+                <td data-label="Apt."><strong>${item.numApt}</strong></td>
+                <td data-label="Inquilino">${item.inquilino}</td>
+                <td data-label="Estado">${statusText}</td>
+                <td data-label="Importe" class="amount">€${item.alquiler.toFixed(2)}</td>
             `;
             this.elements.reportTbody.appendChild(tr);
         });
@@ -835,10 +909,10 @@ const UI = {
             gastosDelMes.forEach(gasto => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${gasto.concepto} <button class="btn btn-icon" style="color:var(--color-danger); padding:0; margin-left:5px;" onclick="App.deleteGasto('${building.id}', '${gasto.id}')">✖</button></td>
-                    <td>${gasto.tipo}</td>
-                    <td>${gasto.fecha}</td>
-                    <td class="amount text-danger">-€${gasto.importe.toFixed(2)}</td>
+                    <td data-label="Concepto">${gasto.concepto} <button class="btn btn-icon" style="color:var(--color-danger); padding:0; margin-left:5px;" onclick="App.deleteGasto('${building.id}', '${gasto.id}')">✖</button></td>
+                    <td data-label="Tipo">${gasto.tipo}</td>
+                    <td data-label="Fecha">${gasto.fecha}</td>
+                    <td data-label="Importe" class="amount text-danger">-€${gasto.importe.toFixed(2)}</td>
                 `;
                 this.elements.reportGastosTbody.appendChild(tr);
             });
@@ -890,17 +964,17 @@ const UI = {
         historico.forEach(h => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="padding:10px; border-bottom:1px solid var(--color-border); font-weight:500;">${h.nombre}</td>
-                <td style="padding:10px; border-bottom:1px solid var(--color-border);">${h.edificioName} (Apt. ${h.aptNum})</td>
-                <td style="padding:10px; border-bottom:1px solid var(--color-border); font-size:13px; color:#666;">
+                <td data-label="Nombre" style="padding:10px; border-bottom:1px solid var(--color-border); font-weight:500;">${h.nombre}</td>
+                <td data-label="Edificio (Apt)" style="padding:10px; border-bottom:1px solid var(--color-border);">${h.edificioName} (Apt. ${h.aptNum})</td>
+                <td data-label="Contacto" style="padding:10px; border-bottom:1px solid var(--color-border); font-size:13px; color:#666;">
                     ${h.telefono ? '📞'+h.telefono : ''} <br> ${h.email ? '✉️'+h.email : ''}
                 </td>
-                <td style="padding:10px; border-bottom:1px solid var(--color-border);">
+                <td data-label="Periodo Total" style="padding:10px; border-bottom:1px solid var(--color-border);">
                     ${h.mesesAlquilado > 0 ? h.mesesAlquilado + ' mes(es)' : '< 1 mes'} 
                     <div style="font-size:11px; color:#888;">(Desde: ${h.fechaEntrada || 'N/A'})</div>
                 </td>
-                <td style="padding:10px; border-bottom:1px solid var(--color-border); color:var(--color-danger);">${h.fechaSalida}</td>
-                <td style="padding:10px; border-bottom:1px solid var(--color-border); text-align:center;">
+                <td data-label="Fecha Salida" style="padding:10px; border-bottom:1px solid var(--color-border); color:var(--color-danger);">${h.fechaSalida}</td>
+                <td data-label="Acción" style="padding:10px; border-bottom:1px solid var(--color-border); text-align:center;">
                     <button class="btn btn-icon" style="color:var(--color-danger);" onclick="App.deleteHistorico('${h.id}')">🗑</button>
                 </td>
             `;

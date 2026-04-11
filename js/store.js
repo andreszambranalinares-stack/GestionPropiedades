@@ -129,6 +129,10 @@ const Store = {
             }
             // Comprobar que todos los edificios tengan su array de gastos y tipo de apartamento
             this.data.edificios.forEach(b => {
+                if(!b.tipoInmueble) {
+                    b.tipoInmueble = 'edificio';
+                    changed = true;
+                }
                 if(!b.gastos) {
                     b.gastos = [];
                     changed = true;
@@ -136,6 +140,10 @@ const Store = {
                 b.apartamentos.forEach(a => {
                     if (!a.tipo) {
                         a.tipo = 'Apartamento';
+                        changed = true;
+                    }
+                    if (!a.pagos) {
+                        a.pagos = [];
                         changed = true;
                     }
                 });
@@ -287,7 +295,7 @@ const Store = {
     /**
      * Añadir o actualizar edificio
      */
-    addBuilding(nombre, direccion, localidad, numApt, etiquetas = []) {
+    addBuilding(nombre, direccion, localidad, numApt, etiquetas = [], tipoInmueble = 'edificio') {
         const bId = `b-${Date.now()}`;
         const building = {
             id: bId,
@@ -295,14 +303,23 @@ const Store = {
             direccion: direccion,
             localidad: localidad,
             etiquetas: etiquetas,
+            tipoInmueble: tipoInmueble,
             gastos: [],
             apartamentos: []
         };
         for(let i=1; i<=numApt; i++) {
+            let unitType = 'Apartamento';
+            if (tipoInmueble === 'garaje') unitType = 'Plaza de Garaje';
+            else if (tipoInmueble === 'local') unitType = 'Local Comercial';
+            else if (tipoInmueble === 'piso') unitType = 'Apartamento';
+
+            let prefix = tipoInmueble === 'garaje' ? 'Plaza ' : '';
+            if (tipoInmueble === 'local' || tipoInmueble === 'piso') prefix = 'Única ';
+
             building.apartamentos.push({
                 id: `${bId}-${i.toString().padStart(2,'0')}`,
-                numero: i.toString().padStart(2,'0'),
-                tipo: 'Apartamento',
+                numero: prefix === 'Única ' ? '1' : `${prefix}${i.toString().padStart(2,'0')}`,
+                tipo: unitType,
                 inquilino: null,
                 pagos: []
             });
