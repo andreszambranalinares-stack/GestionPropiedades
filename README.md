@@ -69,23 +69,7 @@ Se recomienda no utilizar ZamProp en modo incógnito para evitar pérdidas de da
 
 ---
 
-## Roadmap — V6 y más allá
 
-ZamProp tiene una hoja de ruta clara hacia un sistema de gestión integral. Estos son los cuatro pilares planificados para las próximas versiones:
-
-**1. Gestión de gastos y mantenimientos**
-La app hoy controla ingresos puros. Añadir un módulo de gastos por edificio (reparaciones, seguros, IBI, limpieza) permitirá mostrar el **beneficio neto real** en el informe mensual.
-
-**2. Histórico y archivo de inquilinos**
-Al desocupar un apartamento, el perfil actual desaparece. Un archivo de ex-inquilinos permitirá recuperar el historial de pagos y contactar en caso de deudas pendientes.
-
-**3. Almacenamiento documental**
-Mediante `IndexedDB` (sucesor natural de `localStorage`), se habilitará la subida y cifrado de contratos firmados y documentación de cada inquilino directamente en la aplicación.
-
-**4. Dashboard de estadísticas anual**
-Una pestaña de gráficas que resuma la salud de los arrendamientos mes a mes, cruzando los ingresos de todos los edificios durante el año fiscal completo.
-
----
 
 ## Tecnologías utilizadas
 
