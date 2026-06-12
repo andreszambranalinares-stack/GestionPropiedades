@@ -30,14 +30,21 @@ const App = {
         const userToLogin = managers.find(m => m.id === userId);
         if(!userToLogin) return;
 
-        const pin = prompt(`Introduce PIN para ${userToLogin.nombre}`);
-        if (pin === null) return; // Cancelled
-        
+        // Modal propio en lugar de window.prompt (bloqueado en muchos navegadores móviles)
+        UI.openPinModal(userToLogin);
+    },
+
+    verifyPin(userId, pin) {
+        const managers = Store.getManagers();
+        const userToLogin = managers.find(m => m.id === userId);
+        if(!userToLogin) return;
+
         if (pin === userToLogin.pin) {
+            UI.closePinModal();
             Store.setActiveUser(userId);
             this.loadDashboard(userToLogin);
         } else {
-            alert("PIN incorrecto. Acceso denegado.");
+            UI.showPinError();
         }
     },
 
@@ -170,8 +177,12 @@ const App = {
 
         building.apartamentos.forEach(apt => {
             const isOcupado = apt.inquilino !== null;
-            const isPagado = isOcupado && apt.pagos.some(p => p.mes === mesActualFormat && p.pagado);
-            const alquiler = isOcupado ? (parseFloat(apt.inquilino.alquiler) || 0) : 0;
+            const pagoMes = apt.pagos.find(p => p.mes === mesActualFormat && p.pagado);
+            const isPagado = isOcupado && !!pagoMes;
+            // Usar el importe guardado en el pago; si es un pago antiguo sin importe, usar el alquiler actual
+            const alquiler = isOcupado
+                ? ((isPagado && typeof pagoMes.importe === 'number') ? pagoMes.importe : (parseFloat(apt.inquilino.alquiler) || 0))
+                : 0;
 
             let status = 'vacant';
             if (isOcupado) {
@@ -321,12 +332,14 @@ const App = {
 
         // Sumar todos los ingresos del año por mes y restar gastos
         edificios.forEach(b => {
-            // Ingresos
+            // Ingresos (importe guardado en el pago; fallback al alquiler actual para pagos antiguos)
             b.apartamentos.forEach(apt => {
                 apt.pagos.forEach(p => {
                     if(p.pagado && p.mes.startsWith(year.toString())) {
-                        const m = parseInt(p.mes.split('-')[1]) - 1; 
-                        const amount = apt.inquilino ? (parseFloat(apt.inquilino.alquiler) || 0) : 0;
+                        const m = parseInt(p.mes.split('-')[1]) - 1;
+                        const amount = (typeof p.importe === 'number')
+                            ? p.importe
+                            : (apt.inquilino ? (parseFloat(apt.inquilino.alquiler) || 0) : 0);
                         if(amount > 0) {
                             dataChart[m] += amount;
                         }
@@ -351,6 +364,12 @@ const App = {
         UI.showAppLayout();
         UI.showView('tax');
         UI.elements.taxContent.style.display = 'none'; // reset
+        // Año y trimestre actuales por defecto
+        if (!UI.elements.taxYear.value) {
+            const hoy = new Date();
+            UI.elements.taxYear.value = hoy.getFullYear();
+            UI.elements.taxTrim.value = Math.floor(hoy.getMonth() / 3) + 1;
+        }
     },
 
     generateTaxReport() {
@@ -368,12 +387,14 @@ const App = {
         let gastos = 0;
 
         edificios.forEach(b => {
-            // Ingresos
+            // Ingresos (importe guardado en el pago; fallback al alquiler actual para pagos antiguos)
             b.apartamentos.forEach(apt => {
                 apt.pagos.forEach(p => {
                     const[y, m] = p.mes.split('-');
-                    if (p.pagado && y === year && validMonths.includes(m) && apt.inquilino) {
-                        ingresos += parseFloat(apt.inquilino.alquiler) || 0;
+                    if (p.pagado && y === year && validMonths.includes(m)) {
+                        ingresos += (typeof p.importe === 'number')
+                            ? p.importe
+                            : (apt.inquilino ? (parseFloat(apt.inquilino.alquiler) || 0) : 0);
                     }
                 });
             });

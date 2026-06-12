@@ -2,7 +2,25 @@
 
 Todas las novedades y evoluciones técnicas del "Sistema de Gestión de Alquileres" quedan documentadas en este boletín.
 
-## [V6.0] - Enterprise: Documentación, Tributos y Gastos (Actual)
+## [V8.0] - Acceso Móvil, Resumen de Cartera y Contabilidad Fiable (Actual)
+### Corregido
+- **Login en móvil reparado:** El acceso usaba `window.prompt()` para pedir el PIN, una función que muchos navegadores móviles y visores integrados (Instagram, WhatsApp, accesos directos a pantalla de inicio) bloquean silenciosamente, dejando la app clavada en la pantalla inicial. Ahora el PIN se introduce en un **modal propio** con teclado numérico. Además, se eliminaron los botones de usuario fijos del HTML que apuntaban a usuarios inexistentes: la pantalla de login se genera siempre desde la base de datos real.
+- **Importes de cobro congelados:** Cada pago registra ahora el **importe en el momento del cobro**. Antes, Estadísticas, Reportes y Hacienda recalculaban con el alquiler *actual*, por lo que los ingresos pasados se corrompían si el inquilino se marchaba o se le actualizaba la renta. Los pagos antiguos se migran automáticamente.
+- **Doble confirmación al desocupar:** Desocupar un piso pedía confirmación dos veces seguidas; ahora solo una.
+- **Modales con scroll en móvil:** Los formularios largos (ficha de inquilino) ya permiten desplazarse hasta el botón Guardar en pantallas pequeñas.
+- **Año fiscal dinámico:** La vista de Hacienda proponía siempre "2026" fijo; ahora propone el año y trimestre en curso.
+- El selector de "Periodo Personalizado" de las facturas ya no aparece visible por defecto; etiquetas con comillas ya no rompen su botón de borrado; tabla de Ex-Inquilinos corregida.
+
+### Añadido
+- **Panel Resumen de Cartera:** Cuatro tarjetas en "Mis Inmuebles" con ocupación total, cobros pendientes del mes, total cobrado y renta mensual prevista.
+- **Buscador de Inmuebles:** Filtro instantáneo por nombre, dirección o localidad, combinable con el filtro de etiquetas.
+- **Aviso de impagos por edificio:** Cada tarjeta del panel indica "⚠️ N sin cobrar" o "✔ Al día" del mes en curso.
+- **Ayuda de primer acceso:** En el primer arranque, la pantalla de login indica el PIN inicial (0000) y cómo crear gestores.
+- **Diseño de oficina:** Rejilla multi-columna en pantallas grandes (hasta 1140px de ancho útil), cabecera compacta en móvil y menú móvil que se cierra al tocar fuera.
+
+---
+
+## [V6.0] - Enterprise: Documentación, Tributos y Gastos
 ### Añadido
 - **Libro de Gastos e Impuestos:** Nueva funcionalidad para declarar gastos estructurales dentro de un edificio (reparaciones, impuestos, etc.). El "Reporte del Mes" sustrae ahora estos gastos de los alquileres cobrados para ofrecer un **Beneficio Neto**.
 - **Historial de Inquilinos (Agenda):** Al desocupar un piso, los datos del arrendatario anterior ya no se volatilizan; se archivan de manera permanente en el listado *Ex-Inquilinos* con las fechas y teléfonos intactos.

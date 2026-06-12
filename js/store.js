@@ -146,6 +146,17 @@ const Store = {
                         a.pagos = [];
                         changed = true;
                     }
+                    // Migración: pagos antiguos sin importe heredan el alquiler actual
+                    // mientras el inquilino siga viviendo (después ya quedaría fijado)
+                    if (a.inquilino) {
+                        const alquilerActual = parseFloat(a.inquilino.alquiler) || 0;
+                        a.pagos.forEach(p => {
+                            if (p.pagado && typeof p.importe !== 'number' && alquilerActual > 0) {
+                                p.importe = alquilerActual;
+                                changed = true;
+                            }
+                        });
+                    }
                 });
             });
             
@@ -266,15 +277,19 @@ const Store = {
         if(!building) return;
         const apt = building.apartamentos.find(a => a.id === aptId);
         if(!apt) return;
-        
+
         const index = apt.pagos.findIndex(p => p.mes === mes);
         const hoy = new Date().toISOString().split('T')[0];
-        
+        // Guardar el importe en el momento del cobro: así estadísticas y Hacienda
+        // siguen siendo correctas aunque el inquilino se vaya o cambie el alquiler
+        const importe = apt.inquilino ? (parseFloat(apt.inquilino.alquiler) || 0) : 0;
+
         if(index >= 0) {
             apt.pagos[index].pagado = true;
             apt.pagos[index].fecha = hoy;
+            apt.pagos[index].importe = importe;
         } else {
-            apt.pagos.push({ mes: mes, pagado: true, fecha: hoy });
+            apt.pagos.push({ mes: mes, pagado: true, fecha: hoy, importe: importe });
         }
         this.save();
     },

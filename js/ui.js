@@ -81,6 +81,17 @@ const UI = {
         modalBuildingTitle: document.getElementById('modal-building-title'),
         btnEditBuilding: document.getElementById('btn-edit-building'),
         filterTagSelect: document.getElementById('filter-tag-select'),
+        searchBuilding: document.getElementById('search-building'),
+        dashboardSummary: document.getElementById('dashboard-summary'),
+
+        // Modal PIN
+        modalPin: document.getElementById('modal-pin'),
+        formPin: document.getElementById('form-pin'),
+        pinInput: document.getElementById('pin-input'),
+        pinUserName: document.getElementById('pin-user-name'),
+        pinError: document.getElementById('pin-error'),
+        btnCancelPin: document.getElementById('btn-cancel-pin'),
+        loginHint: document.getElementById('login-hint'),
 
         // Managers
         btnManageManagers: document.getElementById('btn-manage-managers'),
@@ -156,43 +167,44 @@ const UI = {
     },
     
     tagsActuales: [],
+    pinUserId: null,
 
     init() {
         this.bindEvents();
-        
-        // Prevenir zoom en inputs móvil
-        document.addEventListener('touchstart', function(event) {
-            if (event.target.tagName === 'INPUT' || 
-                event.target.tagName === 'SELECT' || 
-                event.target.tagName === 'TEXTAREA') {
-                event.target.style.fontSize = '16px';
-            }
-        }, false);
     },
 
     bindEvents() {
-        // Eventos Login
-        const loginButtons = document.querySelectorAll('.user-buttons button');
-        loginButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const userId = e.target.getAttribute('data-user');
-                App.login(userId);
-            });
+        // Eventos Modal PIN (login)
+        this.elements.formPin.addEventListener('submit', (e) => {
+            e.preventDefault();
+            App.verifyPin(this.pinUserId, this.elements.pinInput.value);
+        });
+        this.elements.btnCancelPin.addEventListener('click', () => {
+            this.elements.modalPin.close();
+        });
+        this.elements.pinInput.addEventListener('input', () => {
+            this.elements.pinError.classList.add('hidden');
         });
 
         // Eventos Header
         this.elements.btnLogout.addEventListener('click', () => {
             App.logout();
         });
-        
-        this.elements.btnMobileMenu.addEventListener('click', () => {
+
+        this.elements.btnMobileMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.elements.appNav.classList.toggle('nav-active');
         });
-        // Esconder el menú móvil si se hace clic en un nav link
+        // Esconder el menú móvil si se hace clic en un nav link o fuera del menú
         this.elements.appNav.querySelectorAll('a').forEach(aEl => {
             aEl.addEventListener('click', () => {
                 this.elements.appNav.classList.remove('nav-active');
             });
+        });
+        document.addEventListener('click', (e) => {
+            if (!this.elements.appNav.contains(e.target)) {
+                this.elements.appNav.classList.remove('nav-active');
+            }
         });
 
         // Eventos Dashboard
@@ -241,13 +253,10 @@ const UI = {
         });
 
         this.elements.btnVacateTenant.addEventListener('click', () => {
-            if(confirm("¿Seguro que deseas marcar este apartamento como desocupado? Se borrarán los datos del inquilino y pasará al Historial.")) {
-                const bId = this.elements.modalBuildingId.value;
-                const aId = this.elements.modalAptId.value;
-                this.elements.modalTenant.close();
-                App.vacateTenant(bId, aId);
-                App.loadHistoryView(); // Redirección automática
-            }
+            const bId = this.elements.modalBuildingId.value;
+            const aId = this.elements.modalAptId.value;
+            this.elements.modalTenant.close();
+            App.vacateTenant(bId, aId); // App ya pide confirmación y redirige al historial
         });
 
         // Eventos Invoice
@@ -269,8 +278,12 @@ const UI = {
             window.print();
         });
         
-        // Eventos Building y Filtro
+        // Eventos Building, Filtro y Buscador
         this.elements.filterTagSelect.addEventListener('change', () => {
+            const user = Store.getActiveUser();
+            App.loadDashboard(user);
+        });
+        this.elements.searchBuilding.addEventListener('input', () => {
             const user = Store.getActiveUser();
             App.loadDashboard(user);
         });
@@ -435,6 +448,25 @@ const UI = {
         });
     },
 
+    openPinModal(user) {
+        this.pinUserId = user.id;
+        this.elements.pinUserName.textContent = user.nombre.split(' ')[0];
+        this.elements.pinInput.value = '';
+        this.elements.pinError.classList.add('hidden');
+        this.elements.modalPin.showModal();
+        this.elements.pinInput.focus();
+    },
+
+    showPinError() {
+        this.elements.pinError.classList.remove('hidden');
+        this.elements.pinInput.value = '';
+        this.elements.pinInput.focus();
+    },
+
+    closePinModal() {
+        this.elements.modalPin.close();
+    },
+
     openExpenseModal(bId) {
         this.elements.expenseBId.value = bId;
         this.elements.formExpense.reset();
@@ -464,10 +496,12 @@ const UI = {
         this.tagsActuales.forEach(tag => {
             const tagEl = document.createElement('div');
             tagEl.className = 'tag-item';
-            tagEl.innerHTML = `
-                ${tag}
-                <button type="button" onclick="UI.eliminarTag('${tag}')">×</button>
-            `;
+            tagEl.appendChild(document.createTextNode(tag));
+            const btnRemove = document.createElement('button');
+            btnRemove.type = 'button';
+            btnRemove.textContent = '×';
+            btnRemove.addEventListener('click', () => this.eliminarTag(tag));
+            tagEl.appendChild(btnRemove);
             container.appendChild(tagEl);
         });
 
@@ -541,18 +575,28 @@ const UI = {
             userButtonsContainer.innerHTML = '';
             gestores.forEach(g => {
                 const btn = document.createElement('button');
-                btn.className = 'btn btn-large btn-outline'; // estilo visual genérico 
+                btn.className = 'btn btn-large btn-outline'; // estilo visual genérico
                 btn.style.width = '100%';
                 btn.style.marginBottom = '10px';
                 btn.style.border = '2px solid var(--color-primary)';
                 btn.style.color = 'var(--color-primary)';
                 btn.textContent = g.nombre;
-                btn.dataset.user = g.id;
-                btn.addEventListener('click', (e) => {
-                    App.login(e.target.dataset.user);
+                btn.addEventListener('click', () => {
+                    App.login(g.id);
                 });
                 userButtonsContainer.appendChild(btn);
             });
+        }
+
+        // Primer arranque: solo existe el admin de fábrica → mostrar el PIN inicial
+        if (this.elements.loginHint) {
+            const soloAdminInicial = gestores.length === 1 && gestores[0].id === 'admin-init' && gestores[0].pin === '0000';
+            if (soloAdminInicial) {
+                this.elements.loginHint.textContent = 'Primer acceso: entra con el PIN 0000 y crea tus gestores en "Gestionar Gestores".';
+                this.elements.loginHint.classList.remove('hidden');
+            } else {
+                this.elements.loginHint.classList.add('hidden');
+            }
         }
     },
 
@@ -599,50 +643,126 @@ const UI = {
             this.elements.filterTagSelect.appendChild(opt);
         });
 
-        // Filtrar edificios
+        // Resumen global de la cartera (mes en curso)
+        this.renderDashboardSummary(buildings);
+
+        // Filtrar edificios por etiqueta y por texto de búsqueda
         let displayedBuildings = buildings;
         if (filterVal) {
-            displayedBuildings = buildings.filter(b => b.etiquetas && b.etiquetas.includes(filterVal));
+            displayedBuildings = displayedBuildings.filter(b => b.etiquetas && b.etiquetas.includes(filterVal));
+        }
+        const searchVal = (this.elements.searchBuilding.value || '').trim().toLowerCase();
+        if (searchVal) {
+            displayedBuildings = displayedBuildings.filter(b =>
+                (b.nombre || '').toLowerCase().includes(searchVal) ||
+                (b.direccion || '').toLowerCase().includes(searchVal) ||
+                (b.localidad || '').toLowerCase().includes(searchVal)
+            );
         }
 
         this.elements.buildingsList.innerHTML = '';
 
         if (displayedBuildings.length === 0) {
-            this.elements.buildingsList.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--color-text-muted); background: white; border-radius: 8px; border: 1px dashed var(--color-border);"><h3 style="margin-bottom: 15px; color: var(--color-secondary);">¡Bienvenido a tu panel vacío!</h3><p>Aún no has registrado ningún edificio o unidad de alquiler.</p></div>';
+            const msg = (buildings.length === 0)
+                ? '<h3 style="margin-bottom: 15px; color: var(--color-secondary);">¡Bienvenido a tu panel vacío!</h3><p>Aún no has registrado ningún edificio o unidad de alquiler.</p>'
+                : '<p>Ningún inmueble coincide con la búsqueda o el filtro actual.</p>';
+            this.elements.buildingsList.innerHTML = `<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--color-text-muted); background: white; border-radius: 8px; border: 1px dashed var(--color-border);">${msg}</div>`;
             return;
         }
+
+        const mesActual = new Date().toISOString().slice(0, 7);
 
         displayedBuildings.forEach(building => {
             const numApartamentos = building.apartamentos.length;
             const ocupados = building.apartamentos.filter(a => a.inquilino !== null).length;
+            const pendientes = building.apartamentos.filter(a => {
+                if (!a.inquilino) return false;
+                const pago = (a.pagos || []).find(p => p.mes === mesActual);
+                return !pago || !pago.pagado;
+            }).length;
 
             const card = document.createElement('div');
             card.className = 'card building-card';
-            card.style.marginBottom = 'var(--spacing-md)';
 
             let etiquetasHTML = '';
             if (building.etiquetas && building.etiquetas.length > 0) {
-                etiquetasHTML = '<div style="margin-top: 8px;">' + 
-                    building.etiquetas.map(tag => `<span class="tag">${tag}</span>`).join('') + 
+                etiquetasHTML = '<div style="margin-top: 8px;">' +
+                    building.etiquetas.map(tag => `<span class="tag">${tag}</span>`).join('') +
                     '</div>';
             }
-            
+
+            const pendientesHTML = pendientes > 0
+                ? `<span style="color: var(--color-danger); font-weight: 600;"> · ⚠️ ${pendientes} sin cobrar</span>`
+                : (ocupados > 0 ? `<span style="color: var(--color-success); font-weight: 600;"> · ✔ Al día</span>` : '');
+
             card.innerHTML = `
                 <div style="display:flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                     <div>
                         <h4 style="font-size: 18px;">${building.nombre}</h4>
-                        <p class="text-muted" style="font-size: 14px;">${building.localidad}</p>
+                        <p class="text-muted" style="font-size: 14px;">${building.localidad || ''}</p>
                         ${etiquetasHTML}
                     </div>
                 </div>
                 <div style="background: var(--color-bg); padding: 8px 12px; border-radius: var(--border-radius); font-size: 14px; margin-bottom: var(--spacing-md);">
-                    <strong>${ocupados}</strong> de ${numApartamentos} unidades ocupadas
+                    <strong>${ocupados}</strong> de ${numApartamentos} unidades ocupadas${pendientesHTML}
                 </div>
-                <button class="btn btn-primary" style="width: 100%" onclick="App.openBuilding('${building.id}')">Ver Unidades</button>
+                <button class="btn btn-primary" style="width: 100%; margin-top: auto;" onclick="App.openBuilding('${building.id}')">Ver Unidades</button>
             `;
-            
+
             this.elements.buildingsList.appendChild(card);
         });
+    },
+
+    /**
+     * Tarjetas-resumen del mes en curso para toda la cartera
+     */
+    renderDashboardSummary(buildings) {
+        const container = this.elements.dashboardSummary;
+        if (!container) return;
+
+        const mesActual = new Date().toISOString().slice(0, 7);
+        let totalUnidades = 0, ocupadas = 0, pendientes = 0, cobrado = 0, previsto = 0;
+
+        buildings.forEach(b => {
+            b.apartamentos.forEach(apt => {
+                totalUnidades++;
+                if (!apt.inquilino) return;
+                ocupadas++;
+                const alquiler = parseFloat(apt.inquilino.alquiler) || 0;
+                previsto += alquiler;
+                const pago = (apt.pagos || []).find(p => p.mes === mesActual && p.pagado);
+                if (pago) {
+                    cobrado += (typeof pago.importe === 'number') ? pago.importe : alquiler;
+                } else {
+                    pendientes++;
+                }
+            });
+        });
+
+        if (totalUnidades === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const fmt = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        container.innerHTML = `
+            <div class="summary-card">
+                <span class="summary-value">${ocupadas} / ${totalUnidades}</span>
+                <span class="summary-label">Unidades ocupadas</span>
+            </div>
+            <div class="summary-card ${pendientes > 0 ? 'summary-danger' : 'summary-success'}">
+                <span class="summary-value">${pendientes}</span>
+                <span class="summary-label">Cobros pendientes este mes</span>
+            </div>
+            <div class="summary-card summary-success">
+                <span class="summary-value">€${fmt(cobrado)}</span>
+                <span class="summary-label">Cobrado este mes</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-value">€${fmt(previsto)}</span>
+                <span class="summary-label">Renta mensual prevista</span>
+            </div>
+        `;
     },
 
     /**
@@ -957,7 +1077,7 @@ const UI = {
         
         this.elements.historicoTbody.innerHTML = '';
         if (historico.length === 0) {
-            this.elements.historicoTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay registros en el histórico.</td></tr>';
+            this.elements.historicoTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">No hay registros en el histórico.</td></tr>';
             return;
         }
 

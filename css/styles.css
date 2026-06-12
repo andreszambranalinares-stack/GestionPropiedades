@@ -180,9 +180,73 @@ body {
 
 /* ====== ESTRUCTURA PRINCIPAL ====== */
 #app-container {
-    max-width: 800px;
+    max-width: 1140px; /* Aprovechar pantallas de oficina */
     margin: 0 auto;
 }
+
+/* Rejilla de inmuebles: multi-columna en escritorio, 1 columna en móvil */
+.grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    align-items: stretch;
+}
+
+.building-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Barra de acciones + filtros del dashboard */
+.dashboard-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+    align-items: center;
+}
+
+.dashboard-filters {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Tarjetas resumen de la cartera */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.summary-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.summary-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.summary-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.summary-card.summary-success .summary-value { color: var(--color-success); }
+.summary-card.summary-danger .summary-value { color: var(--color-danger); }
 
 #app-header {
     background: var(--color-bg-card);
@@ -278,6 +342,8 @@ body {
     max-width: 400px;
     margin: auto; /* Centra el <dialog> de forma nativa */
     z-index: 1000;
+    max-height: 90vh;     /* En móvil los formularios largos deben poder */
+    overflow-y: auto;     /* hacer scroll para llegar al botón Guardar  */
 }
 .modal::backdrop {
     background: rgba(15, 23, 42, 0.5); /* overlay oscuro */
@@ -329,6 +395,40 @@ select.form-control {
 .modal-actions {
     display: flex;
     gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+.modal-actions .btn {
+    margin: 0; /* anular márgenes globales de móvil dentro de modales */
+}
+
+/* ====== MODAL PIN (LOGIN) ====== */
+.modal-pin {
+    max-width: 320px;
+}
+
+.pin-input {
+    text-align: center;
+    font-size: 28px;
+    letter-spacing: 12px;
+    font-weight: 700;
+}
+
+.pin-error {
+    color: var(--color-danger);
+    font-size: 13px;
+    text-align: center;
+    margin-top: var(--spacing-sm);
+    font-weight: 500;
+}
+
+.login-hint {
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    background: var(--color-primary-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 10px 14px;
     margin-top: var(--spacing-md);
 }
 
@@ -609,7 +709,47 @@ select.form-control {
         min-height: 44px;        /* Altura mínima táctil */
         min-width: 44px;         /* Ancho mínimo táctil */
         font-size: 15px;         /* Aumentar de 14px */
-        margin: 8px 5px 8px 0;   /* Espacio entre botones */
+    }
+
+    /* ------- CABECERA ------- */
+    #app-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    #header-title {
+        font-size: 17px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 45vw;
+    }
+    .user-badge {
+        font-size: 12px;
+        padding: 3px 8px;
+    }
+
+    /* ------- CONTENIDO ------- */
+    #app-main {
+        padding: var(--spacing-md);
+    }
+
+    /* Cabeceras de vista apiladas: botones accesibles y sin desbordes */
+    .view-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+    .view-header > div {
+        flex-wrap: wrap;
+    }
+
+    /* Buscador y filtros a ancho completo */
+    .dashboard-filters {
+        margin-left: 0;
+        width: 100%;
+    }
+    .dashboard-filters input[type="search"] {
+        flex: 1;
+        min-width: 150px;
     }
 
     /* Botones pequeños (secundarios) */
