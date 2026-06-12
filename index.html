@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0B2545">
+    <title>ZamProp — Tu cartera inmobiliaria, bajo control</title>
+    <!-- Google Fonts: Inter (400 y 500 únicamente) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Tabler Icons (outline) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app-container">
+
+        <!-- Vista: Login / Selección de Usuario -->
+        <section id="view-login" class="view view-active">
+            <div class="login-container">
+                <div class="brand">
+                    <div class="logo-icon logo-icon-lg" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 5h12l-8 10h8" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4 15h4" stroke="#E87D3E" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h1 class="logo-text logo-text-lg">Zam<span>Prop</span></h1>
+                    <p class="brand-slogan">Tu cartera inmobiliaria, bajo control.</p>
+                    <p class="login-question">¿Quién eres?</p>
+                </div>
+                <div class="user-buttons">
+                    <!-- Los botones de usuario se renderizan dinámicamente desde la base de datos -->
+                </div>
+                <p id="login-hint" class="login-hint hidden"></p>
+            </div>
+        </section>
+
+        <!-- Cabecera: sidebar en escritorio, topbar + bottom nav en móvil -->
+        <header id="app-header" class="hidden">
+            <div class="sidebar-logo">
+                <div class="logo-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 5h12l-8 10h8" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4 15h4" stroke="#E87D3E" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="logo-text">Zam<span>Prop</span></span>
+            </div>
+
+            <nav id="app-nav" aria-label="Navegación principal">
+                <span class="sidebar-section">Principal</span>
+                <a href="#" class="nav-item" onclick="App.loadDashboard(Store.getActiveUser())"><i class="ti ti-building" aria-hidden="true"></i> Mis Inmuebles</a>
+                <a href="#" class="nav-item" onclick="App.loadHistoryView()"><i class="ti ti-users" aria-hidden="true"></i> Ex-Inquilinos</a>
+
+                <span class="sidebar-section">Finanzas</span>
+                <a href="#" class="nav-item" onclick="App.loadStatsView()"><i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas Anuales</a>
+                <a href="#" class="nav-item" onclick="App.loadTaxView()"><i class="ti ti-coin" aria-hidden="true"></i> Hacienda</a>
+
+                <span class="sidebar-section">Sistema</span>
+                <a href="#" class="nav-item" onclick="UI.exportBackup()"><i class="ti ti-download" aria-hidden="true"></i> Exportar copia</a>
+                <a href="#" class="nav-item" onclick="document.getElementById('import-json').click()"><i class="ti ti-upload" aria-hidden="true"></i> Importar copia</a>
+
+                <div class="sidebar-footer">
+                    <div class="user-row">
+                        <div class="avatar" aria-hidden="true"><i class="ti ti-user"></i></div>
+                        <div class="user-info">
+                            <p id="active-user-badge"></p>
+                            <span>Sesión activa</span>
+                        </div>
+                        <button id="btn-logout" class="logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+                            <i class="ti ti-logout" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <input type="file" id="import-json" accept=".json" style="display:none" onchange="UI.importBackup(event)">
+
+            <!-- Bottom navigation (solo móvil) -->
+            <nav class="bottom-nav" aria-label="Navegación inferior">
+                <button class="nav-btn" onclick="App.loadDashboard(Store.getActiveUser())">
+                    <i class="ti ti-home" aria-hidden="true"></i><span>Inicio</span>
+                </button>
+                <button class="nav-btn" onclick="App.loadHistoryView()">
+                    <i class="ti ti-users" aria-hidden="true"></i><span>Inquilinos</span>
+                </button>
+                <button class="nav-btn" onclick="App.loadStatsView()">
+                    <i class="ti ti-chart-bar" aria-hidden="true"></i><span>Informes</span>
+                </button>
+                <button class="nav-btn" onclick="App.loadTaxView()">
+                    <i class="ti ti-coin" aria-hidden="true"></i><span>Hacienda</span>
+                </button>
+                <button id="btn-mobile-menu" class="nav-btn" aria-label="Abrir menú">
+                    <i class="ti ti-menu-2" aria-hidden="true"></i><span>Más</span>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main id="app-main" class="hidden">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <h2 id="header-title" class="page-title">Panel Principal</h2>
+                    <span class="page-sub">Tu cartera inmobiliaria, bajo control.</span>
+                </div>
+            </div>
+
+            <div id="app-content">
+            <!-- Vista: Panel de Edificios -->
+            <section id="view-dashboard" class="view">
+                <!-- Resumen global de la cartera (oficina) -->
+                <div id="dashboard-summary" class="stats-row"></div>
+                <div class="dashboard-toolbar">
+                    <button id="btn-new-building" class="btn btn-primary"><i class="ti ti-plus" aria-hidden="true"></i><span class="btn-label">Nuevo Inmueble</span></button>
+                    <button id="btn-manage-managers" class="btn btn-ghost"><i class="ti ti-users" aria-hidden="true"></i><span class="btn-label">Gestionar Gestores</span></button>
+                    <div class="dashboard-filters">
+                        <input type="search" id="search-building" class="form-control input-compact" placeholder="Buscar inmueble...">
+                        <label for="filter-tag-select" class="filter-label">Filtrar:</label>
+                        <select id="filter-tag-select" class="form-control input-compact select-compact">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="buildings-list" class="grid-list">
+                    <!-- Los edificios se renderizarán aquí -->
+                </div>
+            </section>
+
+            <!-- Vista: Detalles de Edificio (Apartamentos) -->
+            <section id="view-building-details" class="view">
+                <div id="buildingPendingBadge"></div>
+                <div class="view-header">
+                    <div class="view-header-left">
+                        <button id="btn-back-dashboard" class="btn btn-icon btn-back"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
+                        <h3 id="current-building-name">Inmueble</h3>
+                    </div>
+                    <div class="view-header-actions">
+                        <button id="btn-edit-building" class="btn btn-outline btn-compact"><i class="ti ti-pencil" aria-hidden="true"></i> Editar Inmueble</button>
+                        <button id="btn-add-expense" onclick="UI.openExpenseModal(document.getElementById('modal-building-id').value)" class="btn btn-danger btn-compact"><i class="ti ti-plus" aria-hidden="true"></i> Gasto</button>
+                        <button id="btn-generate-report" class="btn btn-primary btn-compact"><i class="ti ti-file-invoice" aria-hidden="true"></i> Reporte del Mes</button>
+                    </div>
+                </div>
+                <div id="apartments-list" class="list-container">
+                    <!-- Los apartamentos se renderizarán aquí -->
+                </div>
+            </section>
+
+            <!-- Vista: Factura -->
+            <section id="view-invoice" class="view">
+                <div class="view-header no-print">
+                    <button id="btn-back-from-invoice" class="btn btn-icon btn-back"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
+                    <button id="btn-print-invoice" class="btn btn-primary"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir / PDF</button>
+                </div>
+
+                <div class="invoice-paper" id="invoice-content">
+                    <div class="invoice-header">
+                        <div class="invoice-brand">
+                            <h2 class="invoice-wordmark">Zam<span>Prop</span></h2>
+                            <p class="text-muted">Gestión de Alquileres</p>
+                        </div>
+                        <div class="invoice-meta">
+                            <h3 style="margin-bottom: 4px;">RECIBO Nº <span id="inv-number"></span></h3>
+                            <p><strong>Fecha:</strong> <span id="inv-date"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="invoice-parties">
+                        <div class="party-info">
+                            <p class="party-label">EMISOR</p>
+                            <p><strong id="inv-issuer-name"></strong></p>
+                            <p>Propietario</p>
+                        </div>
+                        <div class="party-info">
+                            <p class="party-label">INQUILINO</p>
+                            <p><strong id="inv-tenant-name"></strong></p>
+                            <p id="inv-tenant-address"></p>
+                        </div>
+                    </div>
+
+                    <div class="invoice-body">
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Alquiler correspondiente al mes de <strong id="inv-month"></strong><br>
+                                        <small id="inv-building-detail" class="text-muted"></small>
+                                    </td>
+                                    <td class="amount">€<span id="inv-amount"></span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>TOTAL A PAGAR</strong></td>
+                                    <td class="amount total">€<span id="inv-total"></span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="invoice-footer">
+                        <p>Recibo generado digitalmente. La validez de este comprobante está sujeta al efectivo cobro del importe.</p>
+                        <div class="signature-box">
+                            <div class="signature-line">Firma del Propietario</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA DE REPORTE MENSUAL -->
+            <section id="view-report" class="view">
+                <div class="view-header no-print">
+                    <button id="btn-back-from-report" class="btn btn-icon btn-back"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
+                    <button id="btn-print-report" class="btn btn-primary"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir Reporte</button>
+                </div>
+
+                <div class="invoice-paper" id="report-content">
+                    <div class="invoice-header">
+                        <div class="invoice-brand">
+                            <h2 class="invoice-wordmark invoice-wordmark-sm">Zam<span>Prop</span></h2>
+                            <p class="text-muted">Reporte Mensual · Estado de Cuentas</p>
+                        </div>
+                        <div class="invoice-meta">
+                            <p><strong>Inmueble:</strong> <span id="rep-building-name"></span></p>
+                            <p><strong>Mes Analizado:</strong> <span id="rep-month-year"></span></p>
+                            <p><strong>Generado el:</strong> <span id="rep-date-generated"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="invoice-body">
+                        <h4>Ingresos</h4>
+                        <table class="invoice-table" id="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Apt.</th>
+                                    <th>Inquilino</th>
+                                    <th>Estado</th>
+                                    <th>Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-tbody">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+
+                        <h4 class="report-expenses-title">Gastos Estructurales</h4>
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-gastos-tbody">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="report-totals">
+                        <div>
+                            <p class="report-total-label">Total Ingresos Real</p>
+                            <h3 class="report-total-value green">€<span id="rep-total-collected">0</span></h3>
+                        </div>
+                        <div>
+                            <p class="report-total-label">Total Gastos</p>
+                            <h3 class="report-total-value red">-€<span id="rep-total-expenses">0</span></h3>
+                        </div>
+                        <div>
+                            <p class="report-total-label">Beneficio Neto</p>
+                            <h3 class="report-total-value blue report-total-net">€<span id="rep-total-net">0</span></h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA DE GESTORES -->
+            <section id="view-managers" class="view">
+                <div class="view-header">
+                    <div class="view-header-left view-header-stack">
+                        <button id="btn-back-from-managers" class="btn btn-icon btn-back"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
+                        <h3>Gestionar Gestores</h3>
+                        <p class="view-subtitle">
+                            Aquí puedes ver todos los gestores que pueden acceder a esta aplicación
+                        </p>
+                    </div>
+                    <button id="btn-new-manager" class="btn btn-primary"><i class="ti ti-plus" aria-hidden="true"></i> Añadir Gestor</button>
+                </div>
+
+                <div>
+                    <h3 class="section-title">Gestores Actuales</h3>
+                    <div class="managers-list" id="managers-list"></div>
+                </div>
+            </section>
+
+            <!-- VISTA DE HISTÓRICO -->
+            <section id="view-history" class="view">
+                <div class="view-header">
+                    <h2>Histórico de Ex-Inquilinos</h2>
+                </div>
+                <div class="card table-card">
+                    <table class="invoice-table data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Edificio (Apt)</th>
+                                <th>Contacto</th>
+                                <th>Periodo Total</th>
+                                <th>Fecha Salida</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historico-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VISTA ESTADÍSTICAS -->
+            <section id="view-stats" class="view">
+                <div class="view-header">
+                    <h2>Estadísticas Anuales (Beneficio Neto)</h2>
+                </div>
+                <div id="chart-container" class="card chart-card">
+                    <!-- Barras CSS inyectadas via JS -->
+                </div>
+                <div class="chart-caption">Balance agregado de todo el año en curso.</div>
+            </section>
+
+            <!-- VISTA HACIENDA -->
+            <section id="view-tax" class="view">
+                <div class="view-header no-print">
+                    <h2>Declaración Trimestral</h2>
+                    <div class="tax-controls">
+                        <select id="tax-trim" class="form-control input-compact select-compact">
+                            <option value="1">T1 (Ene-Mar)</option>
+                            <option value="2">T2 (Abr-Jun)</option>
+                            <option value="3">T3 (Jul-Sep)</option>
+                            <option value="4">T4 (Oct-Dic)</option>
+                        </select>
+                        <input type="number" id="tax-year" class="form-control input-compact tax-year-input">
+                        <button id="btn-generate-tax" class="btn btn-primary btn-compact" onclick="App.generateTaxReport()">Calcular</button>
+                        <button class="btn btn-outline btn-compact" onclick="window.print()"><i class="ti ti-printer" aria-hidden="true"></i> PDF</button>
+                    </div>
+                </div>
+                <div class="invoice-paper" id="tax-content" style="display:none;">
+                    <div class="invoice-header">
+                        <h2>INFORME TRIBUTARIO - RENDIMIENTOS DEL CAPITAL INMOBILIARIO</h2>
+                        <h4 class="text-muted" id="tax-period-title"></h4>
+                    </div>
+                    <table class="invoice-table">
+                        <tr class="tax-row-info"><td colspan="2"><strong>[1] Ingresos Íntegros Computables</strong></td></tr>
+                        <tr><td>Cobros de Rentas Arrendaticias</td><td class="amount">€<span id="tax-ingresos">0</span></td></tr>
+
+                        <tr class="tax-row-expense"><td colspan="2"><strong>[2] Gastos Deducibles</strong></td></tr>
+                        <tr><td>Reparaciones, IBI, Seguros, Comunidad y Conservación</td><td class="amount">-€<span id="tax-gastos">0</span></td></tr>
+
+                        <tr class="tax-row-net"><td colspan="2"><strong>[3] Rendimiento Neto (1 - 2)</strong></td></tr>
+                        <tr><td><strong>Total Rendimiento a Declarar</strong></td><td class="amount"><strong class="tax-net-value">€<span id="tax-neto">0</span></strong></td></tr>
+                    </table>
+                    <p class="tax-disclaimer">Generado automáticamente según el histórico contable guardado de forma local. Válido para cotejo fiscal IRPF.</p>
+                </div>
+            </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal PIN de Acceso (sustituye a window.prompt, bloqueado en muchos navegadores móviles) -->
+    <dialog id="modal-pin" class="modal modal-pin">
+        <form id="form-pin" method="dialog">
+            <h3 class="modal-title-center">Hola, <span id="pin-user-name"></span></h3>
+            <p class="modal-subtitle-center">Introduce tu PIN de acceso</p>
+            <input type="password" id="pin-input" class="form-control pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+            <p id="pin-error" class="pin-error hidden">PIN incorrecto. Inténtalo de nuevo.</p>
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-pin" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Entrar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="modal-tenant" class="modal">
+        <form id="form-tenant" method="dialog">
+            <h3 class="modal-title">Datos del Inquilino</h3>
+            <input type="hidden" id="modal-apt-id">
+            <input type="hidden" id="modal-building-id">
+
+            <div class="form-group">
+                <label>Tipo de Unidad</label>
+                <select id="tenant-unit-type" class="form-control">
+                    <option value="Apartamento">Apartamento / Piso</option>
+                    <option value="Garaje">Garaje</option>
+                    <option value="Trastero">Trastero</option>
+                    <option value="Local Comercial">Local Comercial</option>
+                    <option value="Oficina">Oficina</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nombre del Inquilino</label>
+                <input type="text" id="tenant-name" class="form-control" placeholder="Ej. Juan Pérez" inputmode="text" autocomplete="name">
+            </div>
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="tel" id="tenant-phone" class="form-control" placeholder="600123456" inputmode="tel" autocomplete="tel">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="tenant-email" class="form-control" placeholder="correo@ejemplo.com" inputmode="email" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label>Fecha de Entrada</label>
+                <input type="date" id="tenant-entry" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Alquiler Mensual (€)</label>
+                <input type="number" id="tenant-rent" class="form-control" min="0" step="1" inputmode="decimal" autocomplete="off">
+            </div>
+
+            <!-- Archivos Adjuntos IndexedDB -->
+            <div class="attachments-box">
+                <label class="attachments-label">Contratos / DNI Adjuntos</label>
+                <input type="file" id="tenant-file-upload" class="form-control file-input">
+                <ul id="tenant-files-list" class="files-list">
+                    <!-- JS files -->
+                </ul>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-tenant" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Guardar Info</button>
+            </div>
+            <div class="modal-extra-action">
+                <button type="button" id="btn-vacate-tenant" class="btn btn-secondary btn-large btn-no-margin">Desocupar Piso e ir a Historial</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Modal Gastos -->
+    <dialog id="modal-expense" class="modal">
+        <form id="form-expense" method="dialog">
+            <h3 class="modal-title">Añadir Gasto</h3>
+            <input type="hidden" id="expense-b-id">
+
+            <div class="form-group">
+                <label>Concepto</label>
+                <input type="text" id="expense-desc" class="form-control" placeholder="Ej. Reparación tubería" required>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Gasto</label>
+                <select id="expense-type" class="form-control" required>
+                    <option value="Reparación">Reparación / Conservación</option>
+                    <option value="Suministros">Suministros</option>
+                    <option value="Seguro">Seguro</option>
+                    <option value="IBI">IBI / Impuestos</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="expense-date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Importe (€)</label>
+                <input type="number" id="expense-amount" class="form-control" min="0" step="0.01" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="document.getElementById('modal-expense').close()" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Guardar Gasto</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="modal-building" class="modal">
+        <form id="form-building" method="dialog">
+            <h3 id="modal-building-title" class="modal-title">Nuevo Inmueble</h3>
+            <input type="hidden" id="bld-edit-id">
+
+            <div class="form-group">
+                <label>Tipo de Inmueble (*)</label>
+                <select id="bld-type" class="form-control" required>
+                    <option value="edificio">Edificio / Bloque de Pisos</option>
+                    <option value="garaje">Garaje Comunitario</option>
+                    <option value="piso">Piso / Chalet Independiente</option>
+                    <option value="local">Local Comercial</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nombre (*)</label>
+                <input type="text" id="bld-name" class="form-control" placeholder="Ej. Edificio A / Piso Centro" required>
+            </div>
+            <div class="form-group">
+                <label>Dirección</label>
+                <input type="text" id="bld-address" class="form-control" placeholder="Calle Ejemplo, 1">
+            </div>
+            <div class="form-group">
+                <label>Localidad</label>
+                <input type="text" id="bld-city" class="form-control" placeholder="Jerez de la Frontera">
+            </div>
+            <div class="form-group">
+                <label>Etiquetas</label>
+                <div class="tags-input" id="tagsInput">
+                    <input type="text" id="tagInput" placeholder="ej: Jerez centro, Zona A...">
+                </div>
+                <small class="form-help">Escribe + Enter para agregar</small>
+            </div>
+            <div class="form-group" id="bld-apts-group">
+                <label id="bld-apts-label">Nº de Apartamentos (*)</label>
+                <input type="number" id="bld-apts" class="form-control" min="1" step="1" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-building" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Guardar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="modal-manager" class="modal">
+        <form id="form-manager" method="dialog">
+            <h3 id="modal-manager-title" class="modal-title">Añadir Nuevo Gestor</h3>
+            <input type="hidden" id="manager-edit-id">
+
+            <div class="form-group">
+                <label>Nombre Completo</label>
+                <input type="text" id="manager-name" class="form-control" inputmode="text" autocomplete="name" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="manager-email" class="form-control" inputmode="email" autocomplete="email" required>
+            </div>
+            <div class="form-group">
+                <label>Teléfono <small class="form-help">(opcional)</small></label>
+                <input type="tel" id="manager-phone" class="form-control" placeholder="666 123 456" inputmode="tel" autocomplete="tel">
+            </div>
+            <div class="form-group">
+                <label>Rol</label>
+                <select id="manager-role" class="form-control" required>
+                    <option value="">Selecciona un rol</option>
+                    <option value="admin">Administrador (acceso total)</option>
+                    <option value="gestor">Gestor (ver y editar unidades)</option>
+                    <option value="visualizador">Visualizador (solo ver)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>PIN de Acceso (4 dígitos)</label>
+                <input type="password" id="manager-pin" class="form-control" placeholder="Ej. 1234" maxlength="4" pattern="[0-9]{4}" title="Debe contener exactamente 4 números" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-manager" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Guardar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Modal Factura Options -->
+    <dialog id="modal-invoice-options" class="modal">
+        <form id="form-invoice-opts" method="dialog">
+            <h3 class="modal-title">Opciones de Factura</h3>
+            <input type="hidden" id="inv-opt-b-id">
+            <input type="hidden" id="inv-opt-a-id">
+
+            <div class="form-group">
+                <label>Mes</label>
+                <select id="inv-period-type" class="form-control" required>
+                    <option value="month">Mes Completo (30 días)</option>
+                    <option value="custom">Periodo Personalizado (Por días)</option>
+                </select>
+            </div>
+
+            <div id="inv-custom-dates" class="custom-dates" style="display: none;">
+                <div class="form-group form-group-half">
+                    <label>Desde</label>
+                    <input type="date" id="inv-date-start" class="form-control">
+                </div>
+                <div class="form-group form-group-half">
+                    <label>Hasta</label>
+                    <input type="date" id="inv-date-end" class="form-control">
+                </div>
+            </div>
+
+            <!-- Suplementos -->
+            <div class="supplements-box">
+                <h4 class="supplements-title">Suplementos Añadidos (Opcional)</h4>
+                <div class="supplements-grid">
+                    <div>
+                        <label class="supplement-label">Agua (€)</label>
+                        <input type="number" id="inv-sup-agua" class="form-control input-sm" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="supplement-label">Luz (€)</label>
+                        <input type="number" id="inv-sup-luz" class="form-control input-sm" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="supplement-label">Internet / WiFi (€)</label>
+                        <input type="number" id="inv-sup-internet" class="form-control input-sm" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="supplement-label">Comunidad (€)</label>
+                        <input type="number" id="inv-sup-comunidad" class="form-control input-sm" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>¿Por quién?</label>
+                <select id="inv-issuer-select" class="form-control" required></select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-inv-opts" class="btn btn-outline" style="flex:1">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1">Generar PDF</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Scripts -->
+    <script src="js/store.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
