@@ -566,6 +566,7 @@ const UI = {
         this.containers.login.classList.remove('hidden');
         this.containers.header.classList.add('hidden');
         this.containers.main.classList.add('hidden');
+        this.elements.appNav.classList.remove('nav-active'); // cerrar hoja de menú móvil
         this.showView('login');
 
         // Dynamically render managers
@@ -575,11 +576,7 @@ const UI = {
             userButtonsContainer.innerHTML = '';
             gestores.forEach(g => {
                 const btn = document.createElement('button');
-                btn.className = 'btn btn-large btn-outline'; // estilo visual genérico
-                btn.style.width = '100%';
-                btn.style.marginBottom = '10px';
-                btn.style.border = '2px solid var(--color-primary)';
-                btn.style.color = 'var(--color-primary)';
+                btn.className = 'btn btn-large btn-user';
                 btn.textContent = g.nombre;
                 btn.addEventListener('click', () => {
                     App.login(g.id);
@@ -686,27 +683,29 @@ const UI = {
 
             let etiquetasHTML = '';
             if (building.etiquetas && building.etiquetas.length > 0) {
-                etiquetasHTML = '<div style="margin-top: 8px;">' +
+                etiquetasHTML = '<div>' +
                     building.etiquetas.map(tag => `<span class="tag">${tag}</span>`).join('') +
                     '</div>';
             }
 
+            const iconState = pendientes > 0 ? 'pending' : (ocupados === 0 ? 'vacant' : '');
             const pendientesHTML = pendientes > 0
-                ? `<span style="color: var(--color-danger); font-weight: 600;"> · ⚠️ ${pendientes} sin cobrar</span>`
-                : (ocupados > 0 ? `<span style="color: var(--color-success); font-weight: 600;"> · ✔ Al día</span>` : '');
+                ? `<span class="badge badge-pending"><i class="ti ti-alert-circle" aria-hidden="true"></i> ${pendientes} sin cobrar</span>`
+                : (ocupados > 0 ? `<span class="badge badge-active"><i class="ti ti-check" aria-hidden="true"></i> Al día</span>` : '');
 
             card.innerHTML = `
-                <div style="display:flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                <div class="prop-card-head">
+                    <div class="prop-icon ${iconState}"><i class="ti ti-building" aria-hidden="true"></i></div>
                     <div>
-                        <h4 style="font-size: 18px;">${building.nombre}</h4>
-                        <p class="text-muted" style="font-size: 14px;">${building.localidad || ''}</p>
-                        ${etiquetasHTML}
+                        <h4 class="prop-name">${building.nombre}</h4>
+                        <p class="prop-addr">${building.localidad || ''}</p>
                     </div>
                 </div>
-                <div style="background: var(--color-bg); padding: 8px 12px; border-radius: var(--border-radius); font-size: 14px; margin-bottom: var(--spacing-md);">
-                    <strong>${ocupados}</strong> de ${numApartamentos} unidades ocupadas${pendientesHTML}
+                ${etiquetasHTML}
+                <div class="prop-occupancy">
+                    <span><strong>${ocupados}</strong> de ${numApartamentos} unidades ocupadas</span>${pendientesHTML}
                 </div>
-                <button class="btn btn-primary" style="width: 100%; margin-top: auto;" onclick="App.openBuilding('${building.id}')">Ver Unidades</button>
+                <button class="btn btn-primary btn-block" onclick="App.openBuilding('${building.id}')">Ver Unidades</button>
             `;
 
             this.elements.buildingsList.appendChild(card);
@@ -746,21 +745,25 @@ const UI = {
 
         const fmt = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
         container.innerHTML = `
-            <div class="summary-card">
-                <span class="summary-value">${ocupadas} / ${totalUnidades}</span>
-                <span class="summary-label">Unidades ocupadas</span>
+            <div class="stat-card">
+                <div class="stat-label"><i class="ti ti-building" aria-hidden="true"></i> Unidades ocupadas</div>
+                <div class="stat-value blue">${ocupadas} / ${totalUnidades}</div>
+                <div class="stat-tag">en cartera</div>
             </div>
-            <div class="summary-card ${pendientes > 0 ? 'summary-danger' : 'summary-success'}">
-                <span class="summary-value">${pendientes}</span>
-                <span class="summary-label">Cobros pendientes este mes</span>
+            <div class="stat-card">
+                <div class="stat-label"><i class="ti ti-alert-circle" aria-hidden="true"></i> Cobros pendientes</div>
+                <div class="stat-value ${pendientes > 0 ? 'red' : 'green'}">${pendientes}</div>
+                <div class="stat-tag">este mes</div>
             </div>
-            <div class="summary-card summary-success">
-                <span class="summary-value">€${fmt(cobrado)}</span>
-                <span class="summary-label">Cobrado este mes</span>
+            <div class="stat-card">
+                <div class="stat-label"><i class="ti ti-coin" aria-hidden="true"></i> Cobrado</div>
+                <div class="stat-value green">€${fmt(cobrado)}</div>
+                <div class="stat-tag">este mes</div>
             </div>
-            <div class="summary-card">
-                <span class="summary-value">€${fmt(previsto)}</span>
-                <span class="summary-label">Renta mensual prevista</span>
+            <div class="stat-card">
+                <div class="stat-label"><i class="ti ti-chart-bar" aria-hidden="true"></i> Renta prevista</div>
+                <div class="stat-value">€${fmt(previsto)}</div>
+                <div class="stat-tag">mensual</div>
             </div>
         `;
     },
@@ -792,7 +795,7 @@ const UI = {
                 const plural = pendientes > 1 ? 's' : '';
                 badgeDiv.innerHTML = `
                     <div class="building-pending-badge">
-                        ⚠️ ${pendientes} apartamento${plural} pendiente${plural}
+                        <i class="ti ti-alert-circle" aria-hidden="true"></i> ${pendientes} apartamento${plural} pendiente${plural}
                     </div>
                 `;
             } else {
@@ -820,24 +823,24 @@ const UI = {
             const isOcupado = apt.inquilino !== null;
             const isPagado = isOcupado && apt.pagos.some(p => p.mes === mesActualFormat && p.pagado);
 
-            // Icono Tipo de Unidad
-            let unitIcon = '🏢'; // defecto apartamento
-            if (apt.tipo === 'Garaje') unitIcon = '🚗';
-            else if (apt.tipo === 'Trastero') unitIcon = '📦';
-            else if (apt.tipo === 'Local Comercial') unitIcon = '🏪';
-            else if (apt.tipo === 'Oficina') unitIcon = '💼';
-            else if (apt.tipo === 'Otro') unitIcon = '🔑';
+            // Icono Tipo de Unidad (Tabler outline)
+            let unitIcon = '<i class="ti ti-building" aria-hidden="true"></i>'; // defecto apartamento
+            if (apt.tipo === 'Garaje') unitIcon = '<i class="ti ti-car" aria-hidden="true"></i>';
+            else if (apt.tipo === 'Trastero') unitIcon = '<i class="ti ti-box" aria-hidden="true"></i>';
+            else if (apt.tipo === 'Local Comercial') unitIcon = '<i class="ti ti-building-store" aria-hidden="true"></i>';
+            else if (apt.tipo === 'Oficina') unitIcon = '<i class="ti ti-briefcase" aria-hidden="true"></i>';
+            else if (apt.tipo === 'Otro') unitIcon = '<i class="ti ti-key" aria-hidden="true"></i>';
 
             const card = document.createElement('div');
             card.className = 'card apt-card';
-            
+
             let statusHtml = '';
             if(!isOcupado) {
                 statusHtml = `<span class="apt-status vacant">Desocupado</span>`;
             } else if(isPagado) {
-                statusHtml = `<span class="apt-status occupied" style="background:#dcfce7; color:#16a34a">Al día</span>`;
+                statusHtml = `<span class="apt-status occupied">Al día</span>`;
             } else {
-                statusHtml = `<span class="apt-status" style="background:#fee2e2; color:#dc2626">Pendiente ${mesLiteral}</span>`;
+                statusHtml = `<span class="apt-status pending">Pendiente ${mesLiteral}</span>`;
             }
 
             let detailsHtml = '';
@@ -1009,9 +1012,9 @@ const UI = {
             const tr = document.createElement('tr');
             
             let statusText = '';
-            if (item.status === 'vacant') statusText = '<span style="color:#64748b">Vacío</span>';
-            if (item.status === 'paid') statusText = '<span style="color:#16a34a; font-weight:600">✔ Pagado</span>';
-            if (item.status === 'pending') statusText = '<span style="color:#dc2626; font-weight:600">❌ Pendiente</span>';
+            if (item.status === 'vacant') statusText = '<span style="color:#8A95A3">Vacío</span>';
+            if (item.status === 'paid') statusText = '<span style="color:#3B6D11; font-weight:500">✔ Pagado</span>';
+            if (item.status === 'pending') statusText = '<span style="color:#A32D2D; font-weight:500">✖ Pendiente</span>';
             
             tr.innerHTML = `
                 <td data-label="Apt."><strong>${item.numApt}</strong></td>
@@ -1058,8 +1061,8 @@ const UI = {
             };
 
             const btnDelete = document.createElement('button');
-            btnDelete.textContent = "🗑";
-            btnDelete.style = "background:none; border:none; cursor:pointer;";
+            btnDelete.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>';
+            btnDelete.style = "background:none; border:none; cursor:pointer; color:var(--color-danger);";
             btnDelete.onclick = (e) => {
                 e.preventDefault();
                 App.deleteDocument(f.id, f.tenantApt);
@@ -1086,16 +1089,16 @@ const UI = {
             tr.innerHTML = `
                 <td data-label="Nombre" style="padding:10px; border-bottom:1px solid var(--color-border); font-weight:500;">${h.nombre}</td>
                 <td data-label="Edificio (Apt)" style="padding:10px; border-bottom:1px solid var(--color-border);">${h.edificioName} (Apt. ${h.aptNum})</td>
-                <td data-label="Contacto" style="padding:10px; border-bottom:1px solid var(--color-border); font-size:13px; color:#666;">
-                    ${h.telefono ? '📞'+h.telefono : ''} <br> ${h.email ? '✉️'+h.email : ''}
+                <td data-label="Contacto" style="padding:10px; border-bottom:1px solid var(--color-border); font-size:13px; color:var(--color-text-muted);">
+                    ${h.telefono ? '<i class="ti ti-phone" aria-hidden="true"></i> '+h.telefono : ''} <br> ${h.email ? '<i class="ti ti-mail" aria-hidden="true"></i> '+h.email : ''}
                 </td>
                 <td data-label="Periodo Total" style="padding:10px; border-bottom:1px solid var(--color-border);">
-                    ${h.mesesAlquilado > 0 ? h.mesesAlquilado + ' mes(es)' : '< 1 mes'} 
-                    <div style="font-size:11px; color:#888;">(Desde: ${h.fechaEntrada || 'N/A'})</div>
+                    ${h.mesesAlquilado > 0 ? h.mesesAlquilado + ' mes(es)' : '< 1 mes'}
+                    <div style="font-size:11px; color:var(--color-text-muted);">(Desde: ${h.fechaEntrada || 'N/A'})</div>
                 </td>
                 <td data-label="Fecha Salida" style="padding:10px; border-bottom:1px solid var(--color-border); color:var(--color-danger);">${h.fechaSalida}</td>
                 <td data-label="Acción" style="padding:10px; border-bottom:1px solid var(--color-border); text-align:center;">
-                    <button class="btn btn-icon" style="color:var(--color-danger);" onclick="App.deleteHistorico('${h.id}')">🗑</button>
+                    <button class="btn btn-icon" style="color:var(--color-danger);" onclick="App.deleteHistorico('${h.id}')" title="Eliminar registro"><i class="ti ti-trash" aria-hidden="true"></i></button>
                 </td>
             `;
             this.elements.historicoTbody.appendChild(tr);
@@ -1111,24 +1114,27 @@ const UI = {
         this.elements.chartContainer.innerHTML = '';
         const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
         
+        const mesEnCurso = new Date().getMonth();
         dataChart.forEach((val, index) => {
             const percentage = (val / maxVal) * 100;
             const barWrapper = document.createElement('div');
             barWrapper.style = "flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;";
-            
+
+            // Barras en azul claro; el mes en curso resaltado en azul de acción
+            const barColor = index === mesEnCurso ? 'var(--zam-blue)' : 'var(--blue-bg)';
             const bar = document.createElement('div');
-            bar.style = `width:80%; max-width:40px; background:var(--color-primary); height:${Math.max(percentage, 2)}%; border-radius:4px 4px 0 0; transition:height 0.3s ease; position:relative;`;
+            bar.style = `width:80%; max-width:40px; background:${barColor}; height:${Math.max(percentage, 2)}%; border-radius:3px 3px 0 0; transition:height 0.3s ease; position:relative;`;
             bar.title = `€${val.toFixed(2)}`;
-            
+
             // Label
             const label = document.createElement('div');
             label.textContent = months[index];
-            label.style = "margin-top:5px; font-size:11px; color:#666;";
-            
+            label.style = "margin-top:5px; font-size:10px; color:var(--text-muted);";
+
             // Tooltip (purely visual over)
             const tooltip = document.createElement('span');
             tooltip.textContent = Math.round(val);
-            tooltip.style = "position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; color:#333; font-weight:bold;";
+            tooltip.style = "position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--text-primary); font-weight:500;";
             bar.appendChild(tooltip);
 
             barWrapper.appendChild(bar);
@@ -1165,25 +1171,25 @@ const UI = {
             card.className = 'manager-card';
             
             let rolBadge = 'Gestor';
-            let rolBg = 'var(--color-primary)';
+            let rolClass = 'badge-info';
             if (gestor.rol === 'admin') {
                 rolBadge = 'Administrador';
-                rolBg = 'var(--color-danger)';
+                rolClass = 'badge-pending';
             } else if (gestor.rol === 'visualizador') {
                 rolBadge = 'Visualizador';
-                rolBg = 'var(--color-secondary)';
+                rolClass = 'badge-vacant';
             }
 
             card.innerHTML = `
                 <div class="manager-name">${gestor.nombre}</div>
                 <div class="manager-email">${gestor.email}</div>
-                <div style="font-size: 12px; margin-bottom: 10px;">
-                    <span class="tag" style="background: ${rolBg}">${rolBadge}</span>
+                <div style="margin-bottom: 10px;">
+                    <span class="badge ${rolClass}">${rolBadge}</span>
                 </div>
-                ${gestor.telefono ? `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;">${gestor.telefono}</div>` : ''}
+                ${gestor.telefono ? `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;"><i class="ti ti-phone" aria-hidden="true"></i> ${gestor.telefono}</div>` : ''}
                 <div class="manager-actions" style="display: ${currentUser && currentUser.rol !== 'admin' ? 'none' : 'flex'}">
                     <button class="btn btn-outline btn-small" onclick="App.openEditManager('${gestor.id}')">Editar</button>
-                    <button class="btn btn-secondary btn-small" style="background:var(--color-danger)" onclick="App.removeManager('${gestor.id}')">Eliminar</button>
+                    <button class="btn btn-danger btn-small" onclick="App.removeManager('${gestor.id}')">Eliminar</button>
                 </div>
             `;
             this.elements.managersList.appendChild(card);

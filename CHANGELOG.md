@@ -2,7 +2,18 @@
 
 Todas las novedades y evoluciones técnicas del "Sistema de Gestión de Alquileres" quedan documentadas en este boletín.
 
-## [V8.0] - Acceso Móvil, Resumen de Cartera y Contabilidad Fiable (Actual)
+## [V9.0] - Identidad Visual ZamProp (Actual)
+### Cambiado
+- **Nueva marca ZamProp:** Logotipo con símbolo "Z" en SVG, wordmark bicolor ("Zam" blanco / "Prop" naranja #E87D3E) y eslogan *"Tu cartera inmobiliaria, bajo control."* aplicados al login, sidebar, topbar móvil y documentos imprimibles (recibos y reportes).
+- **Sistema de diseño completo:** Paleta corporativa (navy #0B2545, azul de acción #1A6FA8, acento naranja #E87D3E) con variables CSS globales y estados semánticos (ocupado/vacío/pendiente/informativo). Tipografía Inter restringida a pesos 400/500, sin sombras ni degradados, bordes de 0.5px.
+- **Escritorio:** Sidebar fijo de 220px con navegación agrupada (Principal / Finanzas / Sistema), avatar y cierre de sesión en el pie; topbar blanco con título y subtítulo de página.
+- **Móvil:** Topbar navy con logo, bottom navigation de 5 accesos (Inicio, Inquilinos, Informes, Hacienda, Más), hoja de menú flotante y botón flotante naranja (FAB) para crear inmuebles.
+- **Iconografía Tabler (outline)** en toda la interfaz sustituyendo a los emojis; badges de estado unificados; gráfico de estadísticas en azul claro con el mes en curso resaltado.
+- Sin cambios de lógica: misma navegación, mismos datos y mismas funciones; solo HTML visual y CSS.
+
+---
+
+## [V8.0] - Acceso Móvil, Resumen de Cartera y Contabilidad Fiable
 ### Corregido
 - **Login en móvil reparado:** El acceso usaba `window.prompt()` para pedir el PIN, una función que muchos navegadores móviles y visores integrados (Instagram, WhatsApp, accesos directos a pantalla de inicio) bloquean silenciosamente, dejando la app clavada en la pantalla inicial. Ahora el PIN se introduce en un **modal propio** con teclado numérico. Además, se eliminaron los botones de usuario fijos del HTML que apuntaban a usuarios inexistentes: la pantalla de login se genera siempre desde la base de datos real.
 - **Importes de cobro congelados:** Cada pago registra ahora el **importe en el momento del cobro**. Antes, Estadísticas, Reportes y Hacienda recalculaban con el alquiler *actual*, por lo que los ingresos pasados se corrompían si el inquilino se marchaba o se le actualizaba la renta. Los pagos antiguos se migran automáticamente.

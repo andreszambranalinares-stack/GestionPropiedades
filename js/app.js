@@ -445,7 +445,7 @@ function actualizarBadgePendientes() {
                 const plural = pendientes > 1 ? 's' : '';
                 badgeDiv.innerHTML = `
                     <div class="building-pending-badge">
-                        ⚠️ ${pendientes} apartamento${plural} pendiente${plural}
+                        <i class="ti ti-alert-circle" aria-hidden="true"></i> ${pendientes} apartamento${plural} pendiente${plural}
                     </div>
                 `;
             } else {
