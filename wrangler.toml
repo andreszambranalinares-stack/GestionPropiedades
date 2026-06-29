@@ -1,0 +1,12 @@
+# Configuración para desplegar ZamProp en Cloudflare Pages.
+# Despliegue directo (sin build) ya que es una app estática Vanilla JS.
+#
+#   npx wrangler pages deploy . --project-name=zamprop
+#
+# O conecta el repo de GitHub en el panel de Cloudflare Pages con:
+#   - Build command:        (vacío, ninguno)
+#   - Build output directory: /
+
+name = "zamprop"
+pages_build_output_dir = "."
+compatibility_date = "2026-06-29"

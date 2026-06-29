@@ -1,0 +1,4 @@
+# Cloudflare Pages — fallback de página única
+# Cualquier ruta no encontrada sirve la app (los ficheros reales se sirven antes).
+# https://developers.cloudflare.com/pages/configuration/redirects/
+/*    /index.html    200

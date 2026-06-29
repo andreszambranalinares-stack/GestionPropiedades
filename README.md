@@ -45,6 +45,38 @@ En la primera ejecución, ZamProp inyecta automáticamente un edificio de muestr
 
 ---
 
+## Despliegue en Cloudflare Pages
+
+ZamProp es una app **estática** (sin build), así que se publica en **Cloudflare Pages** sin paso de compilación. Los datos siguen viviendo en el navegador de cada usuario (`localStorage` + IndexedDB); Cloudflare solo sirve los ficheros.
+
+### Opción A — Conectar el repositorio (recomendado)
+
+1. En el panel de Cloudflare: **Workers & Pages → Create → Pages → Connect to Git**.
+2. Selecciona este repositorio.
+3. Configuración de build:
+   - **Framework preset:** None
+   - **Build command:** *(vacío)*
+   - **Build output directory:** `/`
+4. **Deploy**. Cada push a la rama de producción se publica automáticamente.
+
+### Opción B — Despliegue directo por CLI
+
+```
+npx wrangler pages deploy . --project-name=zamprop
+```
+
+### Ficheros de configuración incluidos
+
+| Archivo         | Rol                                                                 |
+| --------------- | ------------------------------------------------------------------- |
+| `wrangler.toml` | Nombre del proyecto y directorio de salida para Pages               |
+| `_headers`      | Cabeceras de seguridad (CSP, X-Frame-Options…) y caché              |
+| `_redirects`    | Fallback de página única                                            |
+
+> La CSP de `_headers` permite las fuentes externas que usa la app (Google Fonts e iconos Tabler vía jsDelivr). Si en el futuro añades otro CDN, recuerda incluirlo allí.
+
+---
+
 ## Arquitectura del proyecto
 
 ZamProp sigue una estructura **MVC en Vanilla JS**, sin frameworks ni dependencias externas.
