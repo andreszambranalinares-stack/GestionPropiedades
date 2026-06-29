@@ -77,6 +77,21 @@ npx wrangler pages deploy . --project-name=zamprop
 
 ---
 
+## Versión en la nube (Supabase) — en construcción
+
+ZamProp está migrando a una versión **multi-usuario en la nube** con
+**Supabase**: registro de usuarios y **grupos** para compartir propiedades
+(p. ej. tú y un familiar en el mismo grupo ven la misma cartera). Las
+propiedades se organizan **por grupos** para poder escalar a otros usuarios
+con total aislamiento de datos (seguridad RLS).
+
+Guía completa y hoja de ruta por fases: [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md).
+
+> La versión local (localStorage) sigue funcionando; la nube se incorpora
+> de forma incremental sin romperla.
+
+---
+
 ## Arquitectura del proyecto
 
 ZamProp sigue una estructura **MVC en Vanilla JS**, sin frameworks ni dependencias externas.
